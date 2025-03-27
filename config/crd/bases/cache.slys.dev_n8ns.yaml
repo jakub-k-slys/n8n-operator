@@ -61,6 +61,62 @@ spec:
                         type: string
                     type: object
                 type: object
+              httpRoute:
+                description: HTTPRoute configuration for the N8n instance
+                properties:
+                  enable:
+                    description: Enable indicates whether to create an HTTPRoute resource
+                    type: boolean
+                  gatewayRef:
+                    description: GatewayRef is the name of the Gateway to attach to
+                    properties:
+                      name:
+                        description: Name of the gateway
+                        type: string
+                      namespace:
+                        description: Namespace of the gateway
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  hostname:
+                    description: Hostname is the host name to use for the HTTPRoute
+                    type: string
+                required:
+                - enable
+                type: object
+              ingress:
+                description: Ingress configuration for the N8n instance
+                properties:
+                  enable:
+                    description: Enable indicates whether to create an Ingress resource
+                    type: boolean
+                  hostname:
+                    description: Hostname is the host name to use for the Ingress
+                    type: string
+                  ingressClassName:
+                    description: IngressClassName is the name of the IngressClass
+                      to use
+                    type: string
+                  tls:
+                    description: TLS configuration for the Ingress
+                    items:
+                      description: IngressTLS defines TLS configuration for Ingress
+                      properties:
+                        hosts:
+                          description: Hosts are the hosts included in the TLS certificate
+                          items:
+                            type: string
+                          type: array
+                        secretName:
+                          description: SecretName is the name of the secret containing
+                            TLS credentials
+                          type: string
+                      type: object
+                    type: array
+                required:
+                - enable
+                type: object
             type: object
           status:
             description: N8nStatus defines the observed state of N8n
@@ -126,6 +182,10 @@ spec:
                 type: array
             type: object
         type: object
+        x-kubernetes-validations:
+        - message: Ingress and HTTPRoute cannot both be enabled
+          rule: '!(has(self.spec.ingress) && has(self.spec.ingress.enable) && self.spec.ingress.enable
+            && has(self.spec.httpRoute) && has(self.spec.httpRoute.enable) && self.spec.httpRoute.enable)'
     served: true
     storage: true
     subresources:

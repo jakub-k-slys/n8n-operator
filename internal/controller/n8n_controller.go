@@ -8,6 +8,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	cachev1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
 )
@@ -44,6 +46,8 @@ type N8nReconciler struct {
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
@@ -202,7 +206,144 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, err
 	}
 
+	// Handle Ingress if enabled
+	if n8n.Spec.Ingress != nil && n8n.Spec.Ingress.Enable {
+		ingress := &networkingv1.Ingress{}
+		err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, ingress)
+		if err != nil && apierrors.IsNotFound(err) {
+			ing := r.ingressForN8n(n8n)
+			log.Info("Creating a new Ingress", "Ingress.Namespace", ing.Namespace, "Ingress.Name", ing.Name)
+			err = r.Create(ctx, ing)
+			if err != nil {
+				log.Error(err, "Failed to create new Ingress", "Ingress.Namespace", ing.Namespace, "Ingress.Name", ing.Name)
+				return ctrl.Result{}, err
+			}
+		} else if err != nil {
+			log.Error(err, "Failed to get Ingress")
+			return ctrl.Result{}, err
+		}
+	}
+
+	// Handle HTTPRoute if enabled
+	if n8n.Spec.HTTPRoute != nil && n8n.Spec.HTTPRoute.Enable {
+		httpRoute := &gatewayv1.HTTPRoute{}
+		err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, httpRoute)
+		if err != nil && apierrors.IsNotFound(err) {
+			route := r.httpRouteForN8n(n8n)
+			log.Info("Creating a new HTTPRoute", "HTTPRoute.Namespace", route.Namespace, "HTTPRoute.Name", route.Name)
+			err = r.Create(ctx, route)
+			if err != nil {
+				log.Error(err, "Failed to create new HTTPRoute", "HTTPRoute.Namespace", route.Namespace, "HTTPRoute.Name", route.Name)
+				return ctrl.Result{}, err
+			}
+		} else if err != nil {
+			log.Error(err, "Failed to get HTTPRoute")
+			return ctrl.Result{}, err
+		}
+	}
+
 	return ctrl.Result{}, nil
+}
+
+func (r *N8nReconciler) ingressForN8n(n8n *cachev1alpha1.N8n) *networkingv1.Ingress {
+	pathType := networkingv1.PathTypePrefix
+	ing := &networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      n8n.Name,
+			Namespace: n8n.Namespace,
+		},
+		Spec: networkingv1.IngressSpec{
+			IngressClassName: &n8n.Spec.Ingress.IngressClassName,
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: n8n.Spec.Ingress.Hostname,
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{
+									Path:     "/",
+									PathType: &pathType,
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: n8n.Name,
+											Port: networkingv1.ServiceBackendPort{
+												Number: 80,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if len(n8n.Spec.Ingress.TLS) > 0 {
+		ing.Spec.TLS = make([]networkingv1.IngressTLS, len(n8n.Spec.Ingress.TLS))
+		for i, tls := range n8n.Spec.Ingress.TLS {
+			ing.Spec.TLS[i] = networkingv1.IngressTLS{
+				Hosts:      tls.Hosts,
+				SecretName: tls.SecretName,
+			}
+		}
+	}
+
+	ctrl.SetControllerReference(n8n, ing, r.Scheme)
+	return ing
+}
+
+func (r *N8nReconciler) httpRouteForN8n(n8n *cachev1alpha1.N8n) *gatewayv1.HTTPRoute {
+	path := "/"
+	kind := gatewayv1.Kind("Service")
+	var portNumber gatewayv1.PortNumber = 80
+	pathType := gatewayv1.PathMatchPathPrefix
+	route := &gatewayv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      n8n.Name,
+			Namespace: n8n.Namespace,
+		},
+		Spec: gatewayv1.HTTPRouteSpec{
+			CommonRouteSpec: gatewayv1.CommonRouteSpec{
+				ParentRefs: []gatewayv1.ParentReference{
+					{
+						Name:      gatewayv1.ObjectName(n8n.Spec.HTTPRoute.GatewayRef.Name),
+						Namespace: (*gatewayv1.Namespace)(&n8n.Spec.HTTPRoute.GatewayRef.Namespace),
+					},
+				},
+			},
+			Hostnames: []gatewayv1.Hostname{
+				gatewayv1.Hostname(n8n.Spec.HTTPRoute.Hostname),
+			},
+			Rules: []gatewayv1.HTTPRouteRule{
+				{
+					Matches: []gatewayv1.HTTPRouteMatch{
+						{
+							Path: &gatewayv1.HTTPPathMatch{
+								Type:  &pathType,
+								Value: &path,
+							},
+						},
+					},
+					BackendRefs: []gatewayv1.HTTPBackendRef{
+						{
+							BackendRef: gatewayv1.BackendRef{
+								BackendObjectReference: gatewayv1.BackendObjectReference{
+									Name: gatewayv1.ObjectName(n8n.Name),
+									Port: &portNumber,
+									Kind: &kind,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctrl.SetControllerReference(n8n, route, r.Scheme)
+	return route
 }
 
 func (r *N8nReconciler) serviceForN8n(n8n *cachev1alpha1.N8n) *corev1.Service {

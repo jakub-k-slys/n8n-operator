@@ -42,6 +42,55 @@ type Database struct {
 	Postgres Postgres `json:"postgres,omitempty"`
 }
 
+// IngressConfig defines the configuration for Kubernetes Ingress
+type IngressConfig struct {
+	// Enable indicates whether to create an Ingress resource
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Enable bool `json:"enable"`
+	// Hostname is the host name to use for the Ingress
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Hostname string `json:"hostname,omitempty"`
+	// IngressClassName is the name of the IngressClass to use
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	IngressClassName string `json:"ingressClassName,omitempty"`
+	// TLS configuration for the Ingress
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	TLS []IngressTLS `json:"tls,omitempty"`
+}
+
+// IngressTLS defines TLS configuration for Ingress
+type IngressTLS struct {
+	// Hosts are the hosts included in the TLS certificate
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Hosts []string `json:"hosts,omitempty"`
+	// SecretName is the name of the secret containing TLS credentials
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	SecretName string `json:"secretName,omitempty"`
+}
+
+// HTTPRouteConfig defines the configuration for Gateway API HTTPRoute
+type HTTPRouteConfig struct {
+	// Enable indicates whether to create an HTTPRoute resource
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Enable bool `json:"enable"`
+	// Hostname is the host name to use for the HTTPRoute
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Hostname string `json:"hostname,omitempty"`
+	// GatewayRef is the name of the Gateway to attach to
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	GatewayRef GatewayRef `json:"gatewayRef,omitempty"`
+}
+
+// GatewayRef defines the reference to a Gateway
+type GatewayRef struct {
+	// Name of the gateway
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Name string `json:"name"`
+	// Namespace of the gateway
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Namespace string `json:"namespace,omitempty"`
+}
+
 // N8nSpec defines the desired state of N8n
 type N8nSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -49,6 +98,14 @@ type N8nSpec struct {
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Database Database `json:"database,omitempty"`
+
+	// Ingress configuration for the N8n instance
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Ingress *IngressConfig `json:"ingress,omitempty"`
+
+	// HTTPRoute configuration for the N8n instance
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	HTTPRoute *HTTPRouteConfig `json:"httpRoute,omitempty"`
 }
 
 // N8nStatus defines the observed state of N8n
@@ -61,6 +118,7 @@ type N8nStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:validation:XValidation:rule="!(has(self.spec.ingress) && has(self.spec.ingress.enable) && self.spec.ingress.enable && has(self.spec.httpRoute) && has(self.spec.httpRoute.enable) && self.spec.httpRoute.enable)",message="Ingress and HTTPRoute cannot both be enabled"
 
 // N8n is the Schema for the n8ns API
 type N8n struct {
