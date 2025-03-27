@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - cache.slys.dev
+  resources:
+  - n8ns
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cache.slys.dev
+  resources:
+  - n8ns/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cache.slys.dev
+  resources:
+  - n8ns/status
+  verbs:
+  - get
+  - patch
+  - update
