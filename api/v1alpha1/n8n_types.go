@@ -49,10 +49,6 @@ type N8nSpec struct {
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Database Database `json:"database,omitempty"`
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Size int32 `json:"size,omitempty"`
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	ContainerPort int32 `json:"containerPort,omitempty"`
 }
 
 // N8nStatus defines the observed state of N8n

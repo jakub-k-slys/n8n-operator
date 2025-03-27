@@ -15,8 +15,6 @@ spec:
       kind: N8n
       name: n8ns.cache.slys.dev
       specDescriptors:
-      - displayName: Container Port
-        path: containerPort
       - displayName: Database
         path: database
       - displayName: Postgres
@@ -33,8 +31,6 @@ spec:
         path: database.postgres.sst
       - displayName: User
         path: database.postgres.user
-      - displayName: Size
-        path: size
       statusDescriptors:
       - description: |-
           INSERT ADDITIONAL STATUS FIELD - define observed state of cluster

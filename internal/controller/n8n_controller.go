@@ -151,9 +151,9 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, err
 	}
 
-	size := n8n.Spec.Size
-	if *found.Spec.Replicas != size {
-		found.Spec.Replicas = &size
+	defaultReplicas := int32(1)
+	if *found.Spec.Replicas != defaultReplicas {
+		found.Spec.Replicas = &defaultReplicas
 		if err = r.Update(ctx, found); err != nil {
 			log.Error(err, "Failed to update Deployment",
 				"Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
@@ -177,7 +177,7 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 	meta.SetStatusCondition(&n8n.Status.Conditions, metav1.Condition{Type: typeAvailableN8n,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
-		Message: fmt.Sprintf("Deployment for custom resource (%s) with %d replicas created successfully", n8n.Name, size)})
+		Message: fmt.Sprintf("Deployment for custom resource (%s) created successfully", n8n.Name)})
 
 	if err := r.Status().Update(ctx, n8n); err != nil {
 		log.Error(err, "Failed to update N8n status")
@@ -196,8 +196,8 @@ func (r *N8nReconciler) doFinalizerOperationsForN8n(cr *cachev1alpha1.N8n) {
 
 func (r *N8nReconciler) deploymentForN8n(
 	n8n *cachev1alpha1.N8n) (*appsv1.Deployment, error) {
-	ls := labelsForN8n(n8n.Name)
-	replicas := n8n.Spec.Size
+	ls := labelsForN8n()
+	replicas := int32(1)
 	image := n8nDockerImage
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -239,6 +239,36 @@ func (r *N8nReconciler) deploymentForN8n(
 							Name:          "http",
 						}},
 						Command: []string{"tini", "--", "/docker-entrypoint.sh"},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "DB_TYPE",
+								Value: "postgresdb",
+							},
+							{
+								Name:  "DB_POSTGRESDB_HOST",
+								Value: n8n.Spec.Database.Postgres.Host,
+							},
+							{
+								Name:  "DB_POSTGRESDB_PORT",
+								Value: fmt.Sprintf("%d", n8n.Spec.Database.Postgres.Port),
+							},
+							{
+								Name:  "DB_POSTGRESDB_DATABASE",
+								Value: n8n.Spec.Database.Postgres.Database,
+							},
+							{
+								Name:  "DB_POSTGRESDB_USER",
+								Value: n8n.Spec.Database.Postgres.User,
+							},
+							{
+								Name:  "DB_POSTGRESDB_PASSWORD",
+								Value: n8n.Spec.Database.Postgres.Password,
+							},
+							{
+								Name:  "DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED",
+								Value: fmt.Sprintf("%t", !n8n.Spec.Database.Postgres.Ssl),
+							},
+						},
 					}},
 				},
 			},
@@ -250,7 +280,7 @@ func (r *N8nReconciler) deploymentForN8n(
 	return dep, nil
 }
 
-func labelsForN8n(name string) map[string]string {
+func labelsForN8n() map[string]string {
 	var imageTag string
 	image := n8nDockerImage
 	imageTag = strings.Split(image, ":")[1]

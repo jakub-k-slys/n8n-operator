@@ -39,9 +39,6 @@ spec:
           spec:
             description: N8nSpec defines the desired state of N8n
             properties:
-              containerPort:
-                format: int32
-                type: integer
               database:
                 properties:
                   postgres:
@@ -64,9 +61,6 @@ spec:
                         type: string
                     type: object
                 type: object
-              size:
-                format: int32
-                type: integer
             type: object
           status:
             description: N8nStatus defines the observed state of N8n
