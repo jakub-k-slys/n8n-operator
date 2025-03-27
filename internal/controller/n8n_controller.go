@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -41,6 +42,7 @@ type N8nReconciler struct {
 // +kubebuilder:rbac:groups=cache.slys.dev,resources=n8ns/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
@@ -184,7 +186,45 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, err
 	}
 
+	// Check if the service already exists, if not create a new one
+	service := &corev1.Service{}
+	err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, service)
+	if err != nil && apierrors.IsNotFound(err) {
+		svc := r.serviceForN8n(n8n)
+		log.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+		err = r.Create(ctx, svc)
+		if err != nil {
+			log.Error(err, "Failed to create new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+			return ctrl.Result{}, err
+		}
+	} else if err != nil {
+		log.Error(err, "Failed to get Service")
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
+}
+
+func (r *N8nReconciler) serviceForN8n(n8n *cachev1alpha1.N8n) *corev1.Service {
+	ls := labelsForN8n()
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      n8n.Name,
+			Namespace: n8n.Namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeClusterIP,
+			Ports: []corev1.ServicePort{{
+				Port:       80,
+				TargetPort: intstr.FromString("http"),
+				Protocol:   corev1.ProtocolTCP,
+				Name:       "http",
+			}},
+			Selector: ls,
+		},
+	}
+	ctrl.SetControllerReference(n8n, svc, r.Scheme)
+	return svc
 }
 
 func (r *N8nReconciler) doFinalizerOperationsForN8n(cr *cachev1alpha1.N8n) {
