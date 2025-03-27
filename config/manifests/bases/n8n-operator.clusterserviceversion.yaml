@@ -1,0 +1,71 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: n8n-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: N8n is the Schema for the n8ns API
+      displayName: N8n
+      kind: N8n
+      name: n8ns.cache.slys.dev
+      specDescriptors:
+      - displayName: Container Port
+        path: containerPort
+      - displayName: Database
+        path: database
+      - displayName: Postgres
+        path: database.postgres
+      - displayName: Database
+        path: database.postgres.database
+      - displayName: Host
+        path: database.postgres.host
+      - displayName: Password
+        path: database.postgres.password
+      - displayName: Port
+        path: database.postgres.port
+      - displayName: Ssl
+        path: database.postgres.sst
+      - displayName: User
+        path: database.postgres.user
+      - displayName: Size
+        path: size
+      statusDescriptors:
+      - description: |-
+          INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+          Important: Run "make" to regenerate code after modifying this file
+        displayName: Conditions
+        path: conditions
+      version: v1alpha1
+  description: tbd
+  displayName: n8n-operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - a
+  links:
+  - name: N8n Operator
+    url: https://n8n-operator.domain
+  maturity: alpha
+  provider:
+    name: slys
+  version: 0.0.0

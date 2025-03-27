@@ -1,0 +1,23 @@
+# permissions for end users to view n8ns.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: n8n-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: n8n-viewer-role
+rules:
+- apiGroups:
+  - cache.slys.dev
+  resources:
+  - n8ns
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cache.slys.dev
+  resources:
+  - n8ns/status
+  verbs:
+  - get
