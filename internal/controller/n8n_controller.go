@@ -26,7 +26,7 @@ import (
 	cachev1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
 )
 
-const n8nFinalizer = "cache.slys.dev/finalizer"
+const n8nFinalizer = "n8n.slys.dev/finalizer"
 const n8nDockerImage = "ghcr.io/n8n-io/n8n:1.85.3"
 
 const (
@@ -40,9 +40,9 @@ type N8nReconciler struct {
 	Recorder record.EventRecorder
 }
 
-// +kubebuilder:rbac:groups=cache.slys.dev,resources=n8ns,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cache.slys.dev,resources=n8ns/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=cache.slys.dev,resources=n8ns/finalizers,verbs=update
+// +kubebuilder:rbac:groups=n8n.slys.dev,resources=n8ns,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=n8n.slys.dev,resources=n8ns/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=n8n.slys.dev,resources=n8ns/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete

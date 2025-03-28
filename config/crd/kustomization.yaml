@@ -2,7 +2,7 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/cache.slys.dev_n8ns.yaml
+- bases/n8n.slys.dev_n8ns.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

@@ -5,7 +5,7 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "cache.slys.dev/v1alpha1",
+          "apiVersion": "n8n.slys.dev/v1alpha1",
           "kind": "N8n",
           "metadata": {
             "labels": {
@@ -30,7 +30,7 @@ spec:
     - description: N8n is the Schema for the n8ns API
       displayName: N8n
       kind: N8n
-      name: n8ns.cache.slys.dev
+      name: n8ns.n8n.slys.dev
       specDescriptors:
       - displayName: Database
         path: database
@@ -65,7 +65,7 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
-          - cache.slys.dev
+          - n8n.slys.dev
           resources:
           - n8ns
           verbs:
@@ -77,13 +77,13 @@ spec:
           - update
           - watch
         - apiGroups:
-          - cache.slys.dev
+          - n8n.slys.dev
           resources:
           - n8ns/finalizers
           verbs:
           - update
         - apiGroups:
-          - cache.slys.dev
+          - n8n.slys.dev
           resources:
           - n8ns/status
           verbs:

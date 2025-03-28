@@ -8,7 +8,7 @@ metadata:
   name: n8n-viewer-role
 rules:
 - apiGroups:
-  - cache.slys.dev
+  - n8n.slys.dev
   resources:
   - n8ns
   verbs:
@@ -16,7 +16,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - cache.slys.dev
+  - n8n.slys.dev
   resources:
   - n8ns/status
   verbs:

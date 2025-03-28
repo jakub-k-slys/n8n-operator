@@ -13,7 +13,7 @@ spec:
     - description: N8n is the Schema for the n8ns API
       displayName: N8n
       kind: N8n
-      name: n8ns.cache.slys.dev
+      name: n8ns.n8n.slys.dev
       specDescriptors:
       - displayName: Database
         path: database
