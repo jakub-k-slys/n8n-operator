@@ -91,6 +91,19 @@ type GatewayRef struct {
 	Namespace string `json:"namespace,omitempty"`
 }
 
+// PersistentStorageConfig defines the configuration for persistent storage
+type PersistentStorageConfig struct {
+	// Enable indicates whether to create a PVC for n8n data
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Enable bool `json:"enable"`
+	// StorageClassName is the name of the StorageClass to use
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	StorageClassName string `json:"storageClassName,omitempty"`
+	// Size is the size of the volume (e.g., "1Gi")
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Size string `json:"size,omitempty"`
+}
+
 // N8nSpec defines the desired state of N8n
 type N8nSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -106,6 +119,10 @@ type N8nSpec struct {
 	// HTTPRoute configuration for the N8n instance
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	HTTPRoute *HTTPRouteConfig `json:"httpRoute,omitempty"`
+
+	// PersistentStorage configuration for n8n data
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	PersistentStorage *PersistentStorageConfig `json:"persistentStorage,omitempty"`
 }
 
 // N8nStatus defines the observed state of N8n

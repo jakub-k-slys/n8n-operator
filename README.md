@@ -37,6 +37,13 @@ Note: Only one routing method (Ingress or HTTPRoute) can be enabled at a time.
 - Configurable database connection parameters
 - SSL support for database connections
 
+### Persistent Storage
+
+- Optional persistent storage for n8n data
+- Configurable storage class and size
+- Data persisted at `/home/node/.n8n`
+- Automatic PVC creation and management
+
 ## Getting Started
 
 ### Prerequisites
@@ -122,6 +129,10 @@ spec:
     gatewayRef:
       name: "gateway"
       namespace: "default"
+  persistentStorage:
+    enable: true
+    storageClassName: "standard"
+    size: "1Gi"
 ```
 
 ### To Uninstall

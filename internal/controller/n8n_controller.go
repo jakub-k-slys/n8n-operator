@@ -11,6 +11,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -380,6 +381,58 @@ func (r *N8nReconciler) deploymentForN8n(
 	ls := labelsForN8n()
 	replicas := int32(1)
 	image := n8nDockerImage
+	var volumes []corev1.Volume
+	var volumeMounts []corev1.VolumeMount
+
+	if n8n.Spec.PersistentStorage != nil && n8n.Spec.PersistentStorage.Enable {
+		volumes = append(volumes, corev1.Volume{
+			Name: "n8n-data",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: n8n.Name + "-data",
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      "n8n-data",
+			MountPath: "/home/node/.n8n",
+		})
+
+		// Create PVC if it doesn't exist
+		pvc := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      n8n.Name + "-data",
+				Namespace: n8n.Namespace,
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+				Resources: corev1.VolumeResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceStorage: resource.MustParse(n8n.Spec.PersistentStorage.Size),
+					},
+				},
+			},
+		}
+		if n8n.Spec.PersistentStorage.StorageClassName != "" {
+			pvc.Spec.StorageClassName = &n8n.Spec.PersistentStorage.StorageClassName
+		}
+
+		if err := ctrl.SetControllerReference(n8n, pvc, r.Scheme); err != nil {
+			return nil, err
+		}
+
+		// Create PVC if it doesn't exist
+		existingPvc := &corev1.PersistentVolumeClaim{}
+		err := r.Get(context.TODO(), types.NamespacedName{Name: pvc.Name, Namespace: pvc.Namespace}, existingPvc)
+		if err != nil && apierrors.IsNotFound(err) {
+			if err := r.Create(context.TODO(), pvc); err != nil {
+				return nil, err
+			}
+		} else if err != nil {
+			return nil, err
+		}
+	}
+
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      n8n.Name,
@@ -401,6 +454,7 @@ func (r *N8nReconciler) deploymentForN8n(
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
 					},
+					Volumes: volumes,
 					Containers: []corev1.Container{{
 						Image:           image,
 						Name:            "n8n",
@@ -450,6 +504,7 @@ func (r *N8nReconciler) deploymentForN8n(
 								Value: fmt.Sprintf("%t", !n8n.Spec.Database.Postgres.Ssl),
 							},
 						},
+						VolumeMounts: volumeMounts,
 					}},
 				},
 			},
