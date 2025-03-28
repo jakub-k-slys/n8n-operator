@@ -40,7 +40,8 @@ Note: Only one routing method (Ingress or HTTPRoute) can be enabled at a time.
 ### Persistent Storage
 
 - Optional persistent storage for n8n data
-- Configurable storage class and size
+- Configurable storage class
+- Default storage size of 10Gi (can be customized)
 - Data persisted at `/home/node/.n8n`
 - Automatic PVC creation and management
 
@@ -132,7 +133,7 @@ spec:
   persistentStorage:
     enable: true
     storageClassName: "standard"
-    size: "1Gi"
+    size: "10Gi" # Optional, defaults to "10Gi"
 ```
 
 ### To Uninstall

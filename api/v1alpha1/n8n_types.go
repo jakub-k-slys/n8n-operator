@@ -99,8 +99,9 @@ type PersistentStorageConfig struct {
 	// StorageClassName is the name of the StorageClass to use
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	StorageClassName string `json:"storageClassName,omitempty"`
-	// Size is the size of the volume (e.g., "1Gi")
+	// Size is the size of the volume (e.g., "10Gi")
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:default="10Gi"
 	Size string `json:"size,omitempty"`
 }
 
