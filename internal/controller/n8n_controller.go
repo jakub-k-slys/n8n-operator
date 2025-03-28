@@ -296,9 +296,9 @@ func (r *N8nReconciler) ingressForN8n(n8n *cachev1alpha1.N8n) *networkingv1.Ingr
 
 func (r *N8nReconciler) httpRouteForN8n(n8n *cachev1alpha1.N8n) *gatewayv1.HTTPRoute {
 	path := "/"
-	kind := gatewayv1.Kind("Service")
-	var portNumber gatewayv1.PortNumber = 80
-	pathType := gatewayv1.PathMatchPathPrefix
+	serviceKind := gatewayv1.Kind("Service")
+	portNumber := gatewayv1.PortNumber(80)
+	var pathType gatewayv1.PathMatchType = "PathPrefix"
 	route := &gatewayv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      n8n.Name,
@@ -332,7 +332,7 @@ func (r *N8nReconciler) httpRouteForN8n(n8n *cachev1alpha1.N8n) *gatewayv1.HTTPR
 								BackendObjectReference: gatewayv1.BackendObjectReference{
 									Name: gatewayv1.ObjectName(n8n.Name),
 									Port: &portNumber,
-									Kind: &kind,
+									Kind: &serviceKind,
 								},
 							},
 						},
