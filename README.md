@@ -85,7 +85,7 @@ privileges or be logged in as admin.
 Create an n8n instance with Ingress:
 
 ```yaml
-apiVersion: cache.slys.dev/v1alpha1
+apiVersion: n8n.slys.dev/v1alpha1
 kind: N8n
 metadata:
   name: n8n-sample
@@ -111,7 +111,7 @@ spec:
 Or with Gateway API HTTPRoute:
 
 ```yaml
-apiVersion: cache.slys.dev/v1alpha1
+apiVersion: n8n.slys.dev/v1alpha1
 kind: N8n
 metadata:
   name: n8n-sample
