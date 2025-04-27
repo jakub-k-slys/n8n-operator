@@ -29,7 +29,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # slys.dev/n8n-operator-bundle:$VERSION and slys.dev/n8n-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= slys.dev/n8n-operator
+IMAGE_TAG_BASE ?= ghcr.io/jakub-k-slys/n8n-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
