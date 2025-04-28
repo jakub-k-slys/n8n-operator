@@ -5,9 +5,9 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - n8n.slys.dev
+  - apps
   resources:
-  - n8ns
+  - deployments
   verbs:
   - create
   - delete
@@ -16,17 +16,3 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - n8n.slys.dev
-  resources:
-  - n8ns/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - n8n.slys.dev
-  resources:
-  - n8ns/status
-  verbs:
-  - get
-  - patch
-  - update

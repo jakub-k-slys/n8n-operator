@@ -2,23 +2,9 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: |-
-      [
-        {
-          "apiVersion": "n8n.slys.dev/v1alpha1",
-          "kind": "N8n",
-          "metadata": {
-            "labels": {
-              "app.kubernetes.io/managed-by": "kustomize",
-              "app.kubernetes.io/name": "n8n-operator"
-            },
-            "name": "n8n-sample"
-          },
-          "spec": null
-        }
-      ]
+    alm-examples: '[]'
     capabilities: Basic Install
-    createdAt: "2025-03-27T17:35:54Z"
+    createdAt: "2025-04-28T14:43:12Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: n8n-operator.v0.0.1
@@ -129,7 +115,7 @@ spec:
                 - --health-probe-bind-address=:8081
                 command:
                 - /manager
-                image: controller:latest
+                image: ghcr.io/jakub-k-slys/n8n-operator:0.0.1
                 livenessProbe:
                   httpGet:
                     path: /healthz

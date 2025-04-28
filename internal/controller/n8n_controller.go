@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	cachev1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
+	n8nv1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
 )
 
 const n8nFinalizer = "n8n.slys.dev/finalizer"
@@ -40,19 +40,17 @@ type N8nReconciler struct {
 	Recorder record.EventRecorder
 }
 
-// +kubebuilder:rbac:groups=n8n.slys.dev,resources=n8ns,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=n8n.slys.dev,resources=n8ns/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=n8n.slys.dev,resources=n8ns/finalizers,verbs=update
-// +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=n8n.slys.dev,resources=n8ns,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	n8n := &cachev1alpha1.N8n{}
+	n8n := &n8nv1alpha1.N8n{}
 	err := r.Get(ctx, req.NamespacedName, n8n)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -528,6 +526,6 @@ func labelsForN8n() map[string]string {
 
 func (r *N8nReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&cachev1alpha1.N8n{}).
+		For(&n8nv1alpha1.N8n{}).
 		Complete(r)
 }

@@ -8,7 +8,7 @@ metadata:
   name: n8n-operator-n8n-editor-role
 rules:
 - apiGroups:
-  - cache.slys.dev
+  - n8n.slys.dev
   resources:
   - n8ns
   verbs:
@@ -20,7 +20,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cache.slys.dev
+  - n8n.slys.dev
   resources:
   - n8ns/status
   verbs:
