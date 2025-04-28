@@ -244,7 +244,7 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	return ctrl.Result{}, nil
 }
 
-func (r *N8nReconciler) ingressForN8n(n8n *cachev1alpha1.N8n) *networkingv1.Ingress {
+func (r *N8nReconciler) ingressForN8n(n8n *n8nv1alpha1.N8n) *networkingv1.Ingress {
 	pathType := networkingv1.PathTypePrefix
 	ing := &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -293,7 +293,7 @@ func (r *N8nReconciler) ingressForN8n(n8n *cachev1alpha1.N8n) *networkingv1.Ingr
 	return ing
 }
 
-func (r *N8nReconciler) httpRouteForN8n(n8n *cachev1alpha1.N8n) *gatewayv1.HTTPRoute {
+func (r *N8nReconciler) httpRouteForN8n(n8n *n8nv1alpha1.N8n) *gatewayv1.HTTPRoute {
 	path := "/"
 	serviceKind := gatewayv1.Kind("Service")
 	portNumber := gatewayv1.PortNumber(80)
@@ -345,7 +345,7 @@ func (r *N8nReconciler) httpRouteForN8n(n8n *cachev1alpha1.N8n) *gatewayv1.HTTPR
 	return route
 }
 
-func (r *N8nReconciler) serviceForN8n(n8n *cachev1alpha1.N8n) *corev1.Service {
+func (r *N8nReconciler) serviceForN8n(n8n *n8nv1alpha1.N8n) *corev1.Service {
 	ls := labelsForN8n()
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -367,7 +367,7 @@ func (r *N8nReconciler) serviceForN8n(n8n *cachev1alpha1.N8n) *corev1.Service {
 	return svc
 }
 
-func (r *N8nReconciler) doFinalizerOperationsForN8n(cr *cachev1alpha1.N8n) {
+func (r *N8nReconciler) doFinalizerOperationsForN8n(cr *n8nv1alpha1.N8n) {
 	r.Recorder.Event(cr, "Warning", "Deleting",
 		fmt.Sprintf("Custom Resource %s is being deleted from the namespace %s",
 			cr.Name,
@@ -375,7 +375,7 @@ func (r *N8nReconciler) doFinalizerOperationsForN8n(cr *cachev1alpha1.N8n) {
 }
 
 func (r *N8nReconciler) deploymentForN8n(
-	n8n *cachev1alpha1.N8n) (*appsv1.Deployment, error) {
+	n8n *n8nv1alpha1.N8n) (*appsv1.Deployment, error) {
 	ls := labelsForN8n()
 	replicas := int32(1)
 	image := n8nDockerImage
