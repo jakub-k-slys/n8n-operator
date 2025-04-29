@@ -130,12 +130,10 @@ type N8nSpec struct {
 type N8nStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
 // +kubebuilder:validation:XValidation:rule="!(has(self.spec.ingress) && has(self.spec.ingress.enable) && self.spec.ingress.enable && has(self.spec.httpRoute) && has(self.spec.httpRoute.enable) && self.spec.httpRoute.enable)",message="Ingress and HTTPRoute cannot both be enabled"
 
 // N8n is the Schema for the n8ns API
