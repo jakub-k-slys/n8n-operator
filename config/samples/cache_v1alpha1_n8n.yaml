@@ -1,9 +1,0 @@
-apiVersion: cache.slys.dev/v1alpha1
-kind: N8n
-metadata:
-  labels:
-    app.kubernetes.io/name: n8n-operator
-    app.kubernetes.io/managed-by: kustomize
-  name: n8n-sample
-spec:
-  # TODO(user): Add fields here
