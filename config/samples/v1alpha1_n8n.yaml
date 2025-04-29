@@ -1,0 +1,23 @@
+apiVersion: n8n.slys.dev/v1alpha1
+kind: N8n
+metadata:
+  name: n8n-sample
+spec:
+  database:
+    postgres:
+      host: "postgres-host"
+      port: 5432
+      database: "n8n"
+      user: "n8n-user"
+      password: "password"
+      ssl: false
+  httpRoute:
+    enable: true
+    hostname: "n8n.example.com"
+    gatewayRef:
+      name: "gateway"
+      namespace: "default"
+  persistentStorage:
+    enable: true
+    storageClassName: "standard"
+    size: "10Gi" # Optional, defaults to "10Gi"

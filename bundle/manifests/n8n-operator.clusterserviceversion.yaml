@@ -2,9 +2,43 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[]'
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "n8n.slys.dev/v1alpha1",
+          "kind": "N8n",
+          "metadata": {
+            "name": "n8n-sample"
+          },
+          "spec": {
+            "database": {
+              "postgres": {
+                "database": "n8n",
+                "host": "postgres-host",
+                "password": "password",
+                "port": 5432,
+                "ssl": false,
+                "user": "n8n-user"
+              }
+            },
+            "httpRoute": {
+              "enable": true,
+              "gatewayRef": {
+                "name": "gateway",
+                "namespace": "default"
+              },
+              "hostname": "n8n.example.com"
+            },
+            "persistentStorage": {
+              "enable": true,
+              "size": "10Gi",
+              "storageClassName": "standard"
+            }
+          }
+        }
+      ]
     capabilities: Basic Install
-    createdAt: "2025-04-29T21:28:52Z"
+    createdAt: "2025-04-29T21:35:00Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: n8n-operator.v0.0.1
