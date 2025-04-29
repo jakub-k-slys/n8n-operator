@@ -18,6 +18,6 @@ rules:
 - apiGroups:
   - n8n.slys.dev
   resources:
-  - n8ns/status
+  - n8ns
   verbs:
   - get
