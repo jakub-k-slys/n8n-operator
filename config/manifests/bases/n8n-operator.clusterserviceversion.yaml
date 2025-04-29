@@ -107,6 +107,7 @@ spec:
   - name: N8n Operator
     url: https://n8n-operator.domain
   maturity: alpha
+  minKubeVersion: 1.21.0
   provider:
     name: slys
   version: 0.0.0

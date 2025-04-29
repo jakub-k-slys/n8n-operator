@@ -4,7 +4,7 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
-    createdAt: "2025-04-29T20:50:40Z"
+    createdAt: "2025-04-29T21:03:18Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: n8n-operator.v0.0.1
@@ -289,6 +289,7 @@ spec:
   - name: N8n Operator
     url: https://n8n-operator.domain
   maturity: alpha
+  minKubeVersion: 1.21.0
   provider:
     name: slys
   version: 0.0.1
