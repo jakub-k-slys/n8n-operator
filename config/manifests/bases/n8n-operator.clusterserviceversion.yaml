@@ -31,12 +31,57 @@ spec:
         path: database.postgres.sst
       - displayName: User
         path: database.postgres.user
-      statusDescriptors:
-      - description: |-
-          INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-          Important: Run "make" to regenerate code after modifying this file
-        displayName: Conditions
-        path: conditions
+      - description: HTTPRoute configuration for the N8n instance
+        displayName: HTTPRoute
+        path: httpRoute
+      - description: Enable indicates whether to create an HTTPRoute resource
+        displayName: Enable
+        path: httpRoute.enable
+      - description: GatewayRef is the name of the Gateway to attach to
+        displayName: Gateway Ref
+        path: httpRoute.gatewayRef
+      - description: Name of the gateway
+        displayName: Name
+        path: httpRoute.gatewayRef.name
+      - description: Namespace of the gateway
+        displayName: Namespace
+        path: httpRoute.gatewayRef.namespace
+      - description: Hostname is the host name to use for the HTTPRoute
+        displayName: Hostname
+        path: httpRoute.hostname
+      - description: Ingress configuration for the N8n instance
+        displayName: Ingress
+        path: ingress
+      - description: Enable indicates whether to create an Ingress resource
+        displayName: Enable
+        path: ingress.enable
+      - description: Hostname is the host name to use for the Ingress
+        displayName: Hostname
+        path: ingress.hostname
+      - description: IngressClassName is the name of the IngressClass to use
+        displayName: Ingress Class Name
+        path: ingress.ingressClassName
+      - description: TLS configuration for the Ingress
+        displayName: TLS
+        path: ingress.tls
+      - description: Hosts are the hosts included in the TLS certificate
+        displayName: Hosts
+        path: ingress.tls[0].hosts
+      - description: SecretName is the name of the secret containing TLS credentials
+        displayName: Secret Name
+        path: ingress.tls[0].secretName
+      - description: PersistentStorage configuration for n8n data
+        displayName: Persistent Storage
+        path: persistentStorage
+      - description: Enable indicates whether to create a PVC for n8n data
+        displayName: Enable
+        path: persistentStorage.enable
+      - description: Size is the size of the volume (e.g., "10Gi")
+        displayName: Size
+        path: persistentStorage.size
+      - description: StorageClassName is the name of the StorageClass to use
+        displayName: Storage Class Name
+        path: persistentStorage.storageClassName
       version: v1alpha1
   description: tbd
   displayName: n8n-operator

@@ -16,7 +16,7 @@ resources:
     namespaced: true
   controller: true
   domain: slys.dev
-  group: cache
+  group: n8n
   kind: N8n
   path: github.com/jakub-k-slys/n8n-operator/api/v1alpha1
   version: v1alpha1
