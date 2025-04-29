@@ -4,7 +4,7 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
-  name: n8n-operator.v0.0.0
+  name: n8n-operator.v0.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -83,8 +83,8 @@ spec:
         displayName: Storage Class Name
         path: persistentStorage.storageClassName
       version: v1alpha1
-  description: tbd
-  displayName: n8n-operator
+  description: N8n
+  displayName: N8n
   icon:
   - base64data: ""
     mediatype: ""
@@ -102,12 +102,15 @@ spec:
   - supported: true
     type: AllNamespaces
   keywords:
-  - a
+  - n8n
+  - ai
+  - automation
   links:
   - name: N8n Operator
     url: https://n8n-operator.domain
   maturity: alpha
   minKubeVersion: 1.21.0
   provider:
-    name: slys
-  version: 0.0.0
+    name: jakub
+    url: iam.slys.dev
+  version: 0.0.1
