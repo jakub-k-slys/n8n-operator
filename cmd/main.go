@@ -25,6 +25,8 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	n8nv1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
+	"github.com/jakub-k-slys/n8n-operator/internal/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -34,9 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	cachev1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
-	"github.com/jakub-k-slys/n8n-operator/internal/controller"
+	gateway "sigs.k8s.io/gateway-api/apis/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -46,13 +46,14 @@ var (
 )
 
 func init() {
+	utilruntime.Must(gateway.AddToScheme(scheme))
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
-	utilruntime.Must(cachev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(n8nv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
+	//	k8sutil.AddToScheme(gateway.Install)
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
@@ -118,6 +119,11 @@ func main() {
 		// can access the metrics endpoint. The RBAC are configured in 'config/rbac/kustomization.yaml'. More info:
 		// https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/metrics/filters#WithAuthenticationAndAuthorization
 		metricsServerOptions.FilterProvider = filters.WithAuthenticationAndAuthorization
+	}
+
+	if err := gateway.AddToScheme(scheme); err != nil {
+		setupLog.Error(err, "problem gatewayv1 scheme")
+		os.Exit(1)
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
