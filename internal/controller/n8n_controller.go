@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	n8nv1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -22,8 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	n8nv1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
 )
 
 const n8nFinalizer = "n8n.slys.dev/finalizer"
