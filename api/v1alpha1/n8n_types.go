@@ -136,7 +136,6 @@ type N8nStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:validation:XValidation:rule="!(has(self.spec.ingress) && has(self.spec.ingress.enable) && self.spec.ingress.enable && has(self.spec.httpRoute) && has(self.spec.httpRoute.enable) && self.spec.httpRoute.enable)",message="Ingress and HTTPRoute cannot both be enabled"
 // +kubebuilder:subresource:status
-
 // N8n is the Schema for the n8ns API
 type N8n struct {
 	metav1.TypeMeta   `json:",inline"`
