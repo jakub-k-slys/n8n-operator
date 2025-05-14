@@ -38,7 +38,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    createdAt: "2025-05-14T09:41:02Z"
+    createdAt: "2025-05-14T10:13:10Z"
     operators.operatorframework.io/builder: operator-sdk-v1.39.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
   name: n8n-operator.v0.0.1
@@ -151,14 +151,7 @@ spec:
         - apiGroups:
           - ""
           resources:
-          - pods
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - ""
-          resources:
+          - persistentvolumeclaims
           - services
           verbs:
           - create
@@ -167,6 +160,14 @@ spec:
           - list
           - patch
           - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - get
+          - list
           - watch
         - apiGroups:
           - gateway.networking.k8s.io
@@ -184,6 +185,7 @@ spec:
           - n8n.slys.dev
           resources:
           - n8ns
+          - n8ns/status
           verbs:
           - create
           - delete

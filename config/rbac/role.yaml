@@ -26,14 +26,7 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
+  - persistentvolumeclaims
   - services
   verbs:
   - create
@@ -42,6 +35,14 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
   - watch
 - apiGroups:
   - gateway.networking.k8s.io
@@ -59,6 +60,7 @@ rules:
   - n8n.slys.dev
   resources:
   - n8ns
+  - n8ns/status
   verbs:
   - create
   - delete
