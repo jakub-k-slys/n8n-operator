@@ -453,15 +453,30 @@ func (r *N8nReconciler) deploymentForN8n(
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
+						FSGroup: &[]int64{1000}[0],
 					},
 					Volumes: volumes,
+					InitContainers: []corev1.Container{{
+						Name:            "init-permissions",
+						Image:           "busybox",
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						Command: []string{
+							"sh",
+							"-c",
+							"chown -R 1000:1000 /home/node/.n8n",
+						},
+						SecurityContext: &corev1.SecurityContext{
+							RunAsUser: &[]int64{0}[0], // Run as root to change ownership
+						},
+						VolumeMounts: volumeMounts,
+					}},
 					Containers: []corev1.Container{{
 						Image:           image,
 						Name:            "n8n",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						SecurityContext: &corev1.SecurityContext{
 							RunAsNonRoot:             &[]bool{true}[0],
-							RunAsUser:                &[]int64{1001}[0],
+							RunAsUser:                &[]int64{1000}[0],
 							AllowPrivilegeEscalation: &[]bool{false}[0],
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{
@@ -502,6 +517,10 @@ func (r *N8nReconciler) deploymentForN8n(
 							{
 								Name:  "DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED",
 								Value: fmt.Sprintf("%t", !n8n.Spec.Database.Postgres.Ssl),
+							},
+							{
+								Name:  "N8N_USER_FOLDER",
+								Value: "/home/node",
 							},
 						},
 						VolumeMounts: volumeMounts,
