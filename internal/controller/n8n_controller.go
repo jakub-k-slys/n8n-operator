@@ -485,7 +485,7 @@ func (r *N8nReconciler) deploymentForN8n(
 							},
 						},
 						Ports: []corev1.ContainerPort{{
-							ContainerPort: 80,
+							ContainerPort: 5678,
 							Name:          "http",
 						}},
 						Command: []string{"tini", "--", "/docker-entrypoint.sh"},
