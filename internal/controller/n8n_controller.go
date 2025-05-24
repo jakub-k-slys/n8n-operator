@@ -466,7 +466,8 @@ func (r *N8nReconciler) deploymentForN8n(
 							"chown -R 1000:1000 /home/node/.n8n",
 						},
 						SecurityContext: &corev1.SecurityContext{
-							RunAsUser: &[]int64{0}[0], // Run as root to change ownership
+							RunAsUser:    &[]int64{0}[0], // Run as root to change ownership
+							RunAsNonRoot: &[]bool{false}[0],
 						},
 						VolumeMounts: volumeMounts,
 					}},
