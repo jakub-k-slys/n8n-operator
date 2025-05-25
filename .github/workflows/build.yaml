@@ -36,5 +36,9 @@ jobs:
             - uses: actions/setup-go@v5
               with:
                 go-version: '>=1.17.0'
-            - name: Running fmt
+            - name: Running generate
+              run: make generate
+            - name: Running manifests
+              run: make manifests
+            - name: Running build
               run: make build
