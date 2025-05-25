@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/jakub-k-slys/n8n-operator/compare/1.0.2...1.1.0) (2025-05-25)
+
+
+### Features
+
+* Add GitHub Actions workflow for Docker image publishing ([5e52be3](https://github.com/jakub-k-slys/n8n-operator/commit/5e52be3c4342f4eb100ba10926ae0a1d53d20720))
+
 ## [1.0.2](https://github.com/jakub-k-slys/n8n-operator/compare/1.0.1...1.0.2) (2025-05-25)
 
 
