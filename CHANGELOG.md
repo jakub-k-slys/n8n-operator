@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/jakub-k-slys/n8n-operator/compare/1.1.0...1.1.1) (2025-05-25)
+
+
+### Bug Fixes
+
+* correct version output reference in Docker workflow ([21a0595](https://github.com/jakub-k-slys/n8n-operator/commit/21a0595811bd344fd63b3421d1f95be8a4820917))
+
 # [1.1.0](https://github.com/jakub-k-slys/n8n-operator/compare/1.0.2...1.1.0) (2025-05-25)
 
 
