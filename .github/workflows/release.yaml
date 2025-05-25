@@ -35,7 +35,5 @@ jobs:
                       @semantic-release/git
               env:
                   GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-            - name: Set VERSION env
+            - name: set VERSION env
               run: echo "VERSION=${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_ENV
-            - run: |
-                echo $VERSION > .version

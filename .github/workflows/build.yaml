@@ -1,0 +1,40 @@
+name: Linter & build
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+jobs:
+    linting:
+        name: Running linter
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            - uses: actions/setup-go@v5
+              with:
+                go-version: '>=1.17.0'
+            - run: go version
+            - name: Running fmt
+              run: make fmt
+            - name: Running vet
+              run: make vet
+            - name: Running lint
+              run: make lint
+    building:
+        name: Running build
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            - uses: actions/setup-go@v5
+              with:
+                go-version: '>=1.17.0'
+            - name: Running fmt
+              run: make build
