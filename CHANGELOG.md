@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/jakub-k-slys/n8n-operator/compare/1.0.0...1.0.1) (2025-05-25)
+
+
+### Bug Fixes
+
+* Use echo command to write version to file ([68138d4](https://github.com/jakub-k-slys/n8n-operator/commit/68138d49882f51ec75cf22816b9e8544ea05dd59))
+
 # 1.0.0 (2025-05-25)
 
 
