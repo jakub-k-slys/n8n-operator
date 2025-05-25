@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/jakub-k-slys/n8n-operator/compare/1.0.1...1.0.2) (2025-05-25)
+
+
+### Bug Fixes
+
+* correct indentation in GitHub Actions release workflow ([cb338a9](https://github.com/jakub-k-slys/n8n-operator/commit/cb338a96e48a3991eb5e7571eef99c77648f7948))
+
 ## [1.0.1](https://github.com/jakub-k-slys/n8n-operator/compare/1.0.0...1.0.1) (2025-05-25)
 
 
