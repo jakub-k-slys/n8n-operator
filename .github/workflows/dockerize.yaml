@@ -30,7 +30,7 @@ jobs:
                   images: |
                       ghcr.io/${{ github.repository }}
             - name: set VERSION env
-              run: echo "VERSION=${{ steps.outputs.version }}" >> $GITHUB_ENV
+              run: echo "VERSION=${{ steps.meta.outputs.version }}" >> $GITHUB_ENV
             - name: Build and push Docker images
               run: |
                 make docker-buildx
