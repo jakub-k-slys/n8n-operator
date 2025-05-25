@@ -25,6 +25,9 @@ jobs:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
+            - uses: actions/setup-go@v5
+              with:
+                go-version: '>=1.17.0'
             - name: Semantic Release
               uses: cycjimmy/semantic-release-action@v4
               id: semantic

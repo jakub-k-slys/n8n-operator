@@ -34,6 +34,15 @@ jobs:
             - name: Build and push Docker images
               run: |
                 make docker-buildx
+            - name: Make bundle
+              run: |
+                make bundle
+            - name: Run bundle-build
+              run: |
+                make bundle-build
+            - name: Run bundle-push
+              run: |
+                make bundle-push
             # - name: Build and push Docker images
             #   uses: docker/build-push-action@v5
             #   with:
