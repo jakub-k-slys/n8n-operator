@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/jakub-k-slys/n8n-operator/compare/1.1.1...1.1.2) (2025-05-25)
+
+
+### Bug Fixes
+
+* Add comment explaining IMG_LATEST variable in Makefile ([f0d7896](https://github.com/jakub-k-slys/n8n-operator/commit/f0d78966aacf052e8eca7aa27fad8f8e9721e9c9))
+
 ## [1.1.1](https://github.com/jakub-k-slys/n8n-operator/compare/1.1.0...1.1.1) (2025-05-25)
 
 
