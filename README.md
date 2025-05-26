@@ -1,3 +1,6 @@
+![n8n.io](https://raw.githubusercontent.com/n8n-io/n8n/master/assets/n8n-logo.png)
+![Operator SDK](https://raw.githubusercontent.com/operator-framework/operator-sdk/4407fd6723aef2063d1dde356abf59ca3bbc849f/website/static/operator_logo_sdk_color.svg)
+![Kubernetes](https://upload.wikimedia.org/wikipedia/commons/3/39/Kubernetes_logo_without_workmark.svg)
 # n8n-operator
 
 A Kubernetes operator to manage n8n workflow automation instances with support for both Ingress and Gateway API routing.
