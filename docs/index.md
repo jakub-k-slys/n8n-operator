@@ -5,10 +5,10 @@ Welcome to the n8n Operator documentation. This operator automates the deploymen
 ## Table of Contents
 
 1. [Installation Guide](installation.md)
-   - Prerequisites
-   - Installation Steps
-   - Project Distribution
-   - Uninstallation
+   * Prerequisites
+   * Installation Steps
+   * Project Distribution
+   * Uninstallation
 
 2. [Configuration Guide](configuration.md)
    - Traffic Routing Options
