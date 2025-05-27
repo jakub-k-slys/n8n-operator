@@ -1,9 +1,5 @@
 site_name: N8N Kubernetes Operator
 theme:
   name: readthedocs
-  highlightjs: true
 plugins:
   - search
-nav:
-  - Home: docs/index.md
-  - About: docs/about.md
