@@ -1,5 +1,5 @@
 site_name: N8N Kubernetes Operator
-theme:
-  name: furo
+# theme:
+#   name: furo
 plugins:
   - search
