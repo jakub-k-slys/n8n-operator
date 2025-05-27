@@ -4,3 +4,6 @@ theme:
   highlightjs: true
 plugins:
   - search
+nav:
+  - Home: docs/index.md
+  - About: docs/about.md
