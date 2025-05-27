@@ -1,6 +1,10 @@
-![n8n.io](https://raw.githubusercontent.com/n8n-io/n8n/master/assets/n8n-logo.png)
-![Operator SDK](https://raw.githubusercontent.com/operator-framework/operator-sdk/4407fd6723aef2063d1dde356abf59ca3bbc849f/website/static/operator_logo_sdk_color.svg)
-![Kubernetes](https://upload.wikimedia.org/wikipedia/commons/3/39/Kubernetes_logo_without_workmark.svg)
+<div align="center">
+  <img src="https://raw.githubusercontent.com/n8n-io/n8n/master/assets/n8n-logo.png" alt="n8n Logo" height="100">
+  <br><br>
+  <img src="https://raw.githubusercontent.com/operator-framework/operator-sdk/4407fd6723aef2063d1dde356abf59ca3bbc849f/website/static/operator_logo_sdk_color.svg" alt="Operator SDK Logo" height="80">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/3/39/Kubernetes_logo_without_workmark.svg" alt="Kubernetes Logo" height="80">
+</div>
+
 # n8n-operator
 
 A Kubernetes operator to manage n8n workflow automation instances with support for both Ingress and Gateway API routing.
@@ -152,7 +156,7 @@ kubectl delete -k config/samples/
 make uninstall
 ```
 
-**UnDeploy the controller from the cluster:**
+**Undeploy the controller from the cluster:**
 
 ```sh
 make undeploy
