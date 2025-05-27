@@ -5,9 +5,9 @@
   <img src="https://upload.wikimedia.org/wikipedia/commons/3/39/Kubernetes_logo_without_workmark.svg" alt="Kubernetes Logo" height="80">
 </div>
 
-# n8n-operator
+# N8n Kubernetes Operator
 
-A Kubernetes operator to manage n8n workflow automation instances with support for both Ingress and Gateway API routing.
+A Kubernetes operator to manage N8N workflow automation instances.
 
 [![Documentation Status](https://readthedocs.org/projects/n8n-operator/badge/?version=latest)](https://n8n-operator.readthedocs.io/en/latest/?badge=latest)
 
@@ -22,12 +22,7 @@ The n8n-operator automates the deployment and management of n8n workflow automat
 
 ## Quick Start
 
-1. Install the operator:
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/n8n-operator/<tag>/dist/install.yaml
-```
-
-2. Create an n8n instance:
+Create an n8n instance:
 ```yaml
 apiVersion: n8n.slys.dev/v1alpha1
 kind: N8n
