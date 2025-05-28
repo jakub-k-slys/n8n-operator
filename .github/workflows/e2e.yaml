@@ -1,11 +1,11 @@
-name: Test
+name: e2e test
 on:
     pull_request:
         branches:
             - main
 jobs:
     test:
-        name: Running tests
+        name: Running e2e tests
         runs-on: ubuntu-latest
         strategy:
             fail-fast: false
@@ -18,6 +18,11 @@ jobs:
             - uses: actions/setup-go@v5
               with:
                 go-version: '>=1.17.0'
+            - name: start minikube
+              id: minikube
+              uses: medyagh/setup-minikube@latest
+            - name: Try the cluster!
+              run: kubectl get pods -A
             - run: go version
-            - name: Running test
-              run: make test  
+            - name: Running e2e tests
+              run: make test-e2e
