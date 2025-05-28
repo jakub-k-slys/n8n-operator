@@ -3,8 +3,6 @@ on:
     pull_request:
         branches:
             - main
-        paths:
-            - 'src/**'
 jobs:
     test:
         name: Running e2e tests
