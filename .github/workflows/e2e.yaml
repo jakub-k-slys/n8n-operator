@@ -1,0 +1,30 @@
+name: e2e test
+on:
+    pull_request:
+        branches:
+            - main
+        paths:
+            - 'src/**'
+jobs:
+    test:
+        name: Running e2e tests
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                ci-env:
+                    - '1'
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            - uses: actions/setup-go@v5
+              with:
+                go-version: '>=1.17.0'
+            - name: start minikube
+              id: minikube
+              uses: medyagh/setup-minikube@latest
+            - name: Try the cluster!
+              run: kubectl get pods -A
+            - run: go version
+            - name: Running e2e tests
+              run: make test-e2e
