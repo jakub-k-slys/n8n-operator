@@ -61,6 +61,15 @@ spec:
                         type: string
                     type: object
                 type: object
+              hostname:
+                properties:
+                  enable:
+                    type: boolean
+                  url:
+                    type: string
+                required:
+                - enable
+                type: object
               httpRoute:
                 description: HTTPRoute configuration for the N8n instance
                 properties:
@@ -114,6 +123,14 @@ spec:
                           type: string
                       type: object
                     type: array
+                required:
+                - enable
+                type: object
+              metrics:
+                description: Metrics defines the configuration for metrics
+                properties:
+                  enable:
+                    type: boolean
                 required:
                 - enable
                 type: object

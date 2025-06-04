@@ -105,6 +105,20 @@ type PersistentStorageConfig struct {
 	Size string `json:"size,omitempty"`
 }
 
+// Metrics defines the configuration for metrics
+type MetricsConfig struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Enable bool `json:"enable"`
+}
+
+type HostnameConfig struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Enable bool `json:"enable"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Url string `json:"url,omitempty"`
+}
+
 // N8nSpec defines the desired state of N8n
 type N8nSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -124,6 +138,12 @@ type N8nSpec struct {
 	// PersistentStorage configuration for n8n data
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	PersistentStorage *PersistentStorageConfig `json:"persistentStorage,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Metrics *MetricsConfig `json:"metrics,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Hostname *HostnameConfig `json:"hostname,omitempty"`
 }
 
 // N8nStatus defines the observed state of N8n

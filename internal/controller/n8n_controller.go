@@ -525,7 +525,7 @@ func (r *N8nReconciler) deploymentForN8n(
 							},
 							{
 								Name:  "N8N_EDITOR_BASE_URL",
-								Value: "https://n8n.k8s.slys.dev",
+								Value: fmt.Sprintf("https://%s", n8n.Spec.Hostname.Url),
 							},
 							{
 								Name:  "N8N_TEMPLATES_ENABLED",
@@ -533,15 +533,15 @@ func (r *N8nReconciler) deploymentForN8n(
 							},
 							{
 								Name:  "N8N_HOST",
-								Value: "https://n8n.k8s.slys.dev",
+								Value: fmt.Sprintf("https://%s", n8n.Spec.Hostname.Url),
 							},
 							{
 								Name:  "WEBHOOK_URL",
-								Value: "n8n.k8s.slys.dev",
+								Value: n8n.Spec.Hostname.Url,
 							},
 							{
 								Name:  "N8N_METRICS",
-								Value: "true",
+								Value: fmt.Sprintf("%t", n8n.Spec.Metrics.Enable),
 							},
 						},
 						VolumeMounts: volumeMounts,
