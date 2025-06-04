@@ -523,6 +523,26 @@ func (r *N8nReconciler) deploymentForN8n(
 								Name:  "N8N_USER_FOLDER",
 								Value: "/home/node",
 							},
+							{
+								Name:  "N8N_EDITOR_BASE_URL",
+								Value: "https://n8n.k8s.slys.dev",
+							},
+							{
+								Name:  "N8N_TEMPLATES_ENABLED",
+								Value: "true",
+							},
+							{
+								Name:  "N8N_HOST",
+								Value: "https://n8n.k8s.slys.dev",
+							},
+							{
+								Name:  "WEBHOOK_URL",
+								Value: "n8n.k8s.slys.dev",
+							},
+							{
+								Name:  "N8N_METRICS",
+								Value: "true",
+							},
 						},
 						VolumeMounts: volumeMounts,
 					}},
