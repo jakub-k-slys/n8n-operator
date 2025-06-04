@@ -25,8 +25,9 @@ import (
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+const n8nVersion = "1.85.3"
 const n8nFinalizer = "n8n.slys.dev/finalizer"
-const n8nDockerImage = "ghcr.io/n8n-io/n8n:1.85.3"
+const n8nDockerImage = "ghcr.io/n8n-io/n8n:" + n8nVersion
 
 const (
 	typeAvailableN8n = "Available"
@@ -437,6 +438,12 @@ func (r *N8nReconciler) deploymentForN8n(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      n8n.Name,
 			Namespace: n8n.Namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":    "n8n",
+				"app":                       "n8n",
+				"app.kubernetes.io/version": n8nVersion,
+				"version":                   n8nVersion,
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
