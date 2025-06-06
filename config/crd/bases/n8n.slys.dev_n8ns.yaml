@@ -88,9 +88,6 @@ spec:
                     required:
                     - name
                     type: object
-                  hostname:
-                    description: Hostname is the host name to use for the HTTPRoute
-                    type: string
                 required:
                 - enable
                 type: object
@@ -100,9 +97,6 @@ spec:
                   enable:
                     description: Enable indicates whether to create an Ingress resource
                     type: boolean
-                  hostname:
-                    description: Hostname is the host name to use for the Ingress
-                    type: string
                   ingressClassName:
                     description: IngressClassName is the name of the IngressClass
                       to use

@@ -47,9 +47,6 @@ type IngressConfig struct {
 	// Enable indicates whether to create an Ingress resource
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Enable bool `json:"enable"`
-	// Hostname is the host name to use for the Ingress
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Hostname string `json:"hostname,omitempty"`
 	// IngressClassName is the name of the IngressClass to use
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	IngressClassName string `json:"ingressClassName,omitempty"`
@@ -73,9 +70,6 @@ type HTTPRouteConfig struct {
 	// Enable indicates whether to create an HTTPRoute resource
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Enable bool `json:"enable"`
-	// Hostname is the host name to use for the HTTPRoute
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Hostname string `json:"hostname,omitempty"`
 	// GatewayRef is the name of the Gateway to attach to
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	GatewayRef GatewayRef `json:"gatewayRef,omitempty"`

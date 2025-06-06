@@ -7,6 +7,7 @@ import (
 	"time"
 
 	n8nv1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -49,6 +50,7 @@ type N8nReconciler struct {
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
 
 func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
@@ -244,7 +246,53 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		}
 	}
 
+	// Handle ServiceMonitor if metrics are enabled
+	if n8n.Spec.Metrics != nil && n8n.Spec.Metrics.Enable {
+		serviceMonitor := &monitoringv1.ServiceMonitor{}
+		err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, serviceMonitor)
+		if err != nil && apierrors.IsNotFound(err) {
+			sm := r.serviceMonitorForN8n(n8n)
+			log.Info("Creating a new ServiceMonitor", "ServiceMonitor.Namespace", sm.Namespace, "ServiceMonitor.Name", sm.Name)
+			err = r.Create(ctx, sm)
+			if err != nil {
+				log.Error(err, "Failed to create new ServiceMonitor", "ServiceMonitor.Namespace", sm.Namespace, "ServiceMonitor.Name", sm.Name)
+				return ctrl.Result{}, err
+			}
+		} else if err != nil {
+			log.Error(err, "Failed to get ServiceMonitor")
+			return ctrl.Result{}, err
+		}
+	}
+
 	return ctrl.Result{}, nil
+}
+
+func (r *N8nReconciler) serviceMonitorForN8n(n8n *n8nv1alpha1.N8n) *monitoringv1.ServiceMonitor {
+	labels := labelsForN8n()
+
+	sm := &monitoringv1.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      n8n.Name,
+			Namespace: n8n.Namespace,
+			Labels:    labels,
+		},
+		Spec: monitoringv1.ServiceMonitorSpec{
+			Endpoints: []monitoringv1.Endpoint{
+				{
+					Port: "http",
+					Path: "/metrics",
+				},
+			},
+			Selector: metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+		},
+	}
+
+	if err := ctrl.SetControllerReference(n8n, sm, r.Scheme); err != nil {
+		return nil
+	}
+	return sm
 }
 
 func (r *N8nReconciler) ingressForN8n(n8n *n8nv1alpha1.N8n) *networkingv1.Ingress {
@@ -258,7 +306,7 @@ func (r *N8nReconciler) ingressForN8n(n8n *n8nv1alpha1.N8n) *networkingv1.Ingres
 			IngressClassName: &n8n.Spec.Ingress.IngressClassName,
 			Rules: []networkingv1.IngressRule{
 				{
-					Host: n8n.Spec.Ingress.Hostname,
+					Host: n8n.Spec.Hostname.Url,
 					IngressRuleValue: networkingv1.IngressRuleValue{
 						HTTP: &networkingv1.HTTPIngressRuleValue{
 							Paths: []networkingv1.HTTPIngressPath{
@@ -316,7 +364,7 @@ func (r *N8nReconciler) httpRouteForN8n(n8n *n8nv1alpha1.N8n) *gatewayv1.HTTPRou
 				},
 			},
 			Hostnames: []gatewayv1.Hostname{
-				gatewayv1.Hostname(n8n.Spec.HTTPRoute.Hostname),
+				gatewayv1.Hostname(n8n.Spec.Hostname.Url),
 			},
 			Rules: []gatewayv1.HTTPRouteRule{
 				{
@@ -548,7 +596,7 @@ func (r *N8nReconciler) deploymentForN8n(
 							},
 							{
 								Name:  "N8N_METRICS",
-								Value: fmt.Sprintf("%t", n8n.Spec.Metrics.Enable),
+								Value: fmt.Sprintf("%t", n8n.Spec.Metrics != nil && n8n.Spec.Metrics.Enable),
 							},
 						},
 						VolumeMounts: volumeMounts,
