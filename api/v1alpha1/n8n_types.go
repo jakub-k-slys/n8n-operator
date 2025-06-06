@@ -50,7 +50,7 @@ type Postgres struct {
 
 type Database struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Postgres Postgres `json:"postgres,omitempty"`
+	Postgres Postgres `json:"postgres"`
 }
 
 // IngressConfig defines the configuration for Kubernetes Ingress
@@ -83,7 +83,7 @@ type HTTPRouteConfig struct {
 	Enable bool `json:"enable"`
 	// GatewayRef is the name of the Gateway to attach to
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	GatewayRef GatewayRef `json:"gatewayRef,omitempty"`
+	GatewayRef GatewayRef `json:"gatewayRef"`
 }
 
 // GatewayRef defines the reference to a Gateway
@@ -132,7 +132,7 @@ type N8nSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Database Database `json:"database,omitempty"`
+	Database Database `json:"database"`
 
 	// Ingress configuration for the N8n instance
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -177,7 +177,7 @@ type N8n struct {
 // N8nList contains a list of N8n
 type N8nList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []N8n `json:"items"`
 }
 
