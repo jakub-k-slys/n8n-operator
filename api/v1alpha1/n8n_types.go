@@ -166,10 +166,10 @@ type N8nStatus struct {
 // N8n is the Schema for the n8ns API
 type N8n struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   N8nSpec   `json:"spec,omitempty"`
-	Status N8nStatus `json:"status,omitempty"`
+	Spec   N8nSpec   `json:"spec"`
+	Status N8nStatus `json:"status"`
 }
 
 // +kubebuilder:object:root=true
