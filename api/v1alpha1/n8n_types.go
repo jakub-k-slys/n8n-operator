@@ -24,17 +24,28 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type Postgres struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Host string `json:"host,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Host string `json:"host"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Port uint32 `json:"port,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port uint32 `json:"port"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Database string `json:"database,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Database string `json:"database"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	User string `json:"user,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	User string `json:"user"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Password string `json:"password,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Password string `json:"password"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Ssl bool `json:"sst,omitempty"`
+	Ssl bool `json:"ssl,omitempty"`
 }
 
 type Database struct {
@@ -110,6 +121,8 @@ type HostnameConfig struct {
 	Enable bool `json:"enable"`
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+	// +kubebuilder:validation:MinLength=1
 	Url string `json:"url,omitempty"`
 }
 
