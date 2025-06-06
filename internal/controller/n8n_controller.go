@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	n8nv1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -12,11 +11,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -66,9 +62,9 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, err
 	}
 
+	// Initialize status conditions if not set
 	if n8n.Status.Conditions == nil || len(n8n.Status.Conditions) == 0 {
-		meta.SetStatusCondition(&n8n.Status.Conditions, metav1.Condition{Type: typeAvailableN8n, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
-		if err = r.Status().Update(ctx, n8n); err != nil {
+		if err = r.updateStatus(ctx, n8n, typeAvailableN8n, metav1.ConditionUnknown, "Reconciling", "Starting reconciliation"); err != nil {
 			log.Error(err, "Failed to update n8n status")
 			return ctrl.Result{}, err
 		}
@@ -78,50 +74,38 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		}
 	}
 
+	// Handle finalizer
 	if !controllerutil.ContainsFinalizer(n8n, n8nFinalizer) {
 		log.Info("Adding Finalizer for n8n")
 		if ok := controllerutil.AddFinalizer(n8n, n8nFinalizer); !ok {
 			log.Error(err, "Failed to add finalizer into the custom resource")
 			return ctrl.Result{Requeue: true}, nil
 		}
-
 		if err = r.Update(ctx, n8n); err != nil {
 			log.Error(err, "Failed to update custom resource to add finalizer")
 			return ctrl.Result{}, err
 		}
 	}
-	isN8nMarkedToBeDeleted := n8n.GetDeletionTimestamp() != nil
-	if isN8nMarkedToBeDeleted {
+
+	// Handle deletion
+	if n8n.GetDeletionTimestamp() != nil {
 		if controllerutil.ContainsFinalizer(n8n, n8nFinalizer) {
-			log.Info("Performing Finalizer Operations for n8n before delete CR")
-			meta.SetStatusCondition(&n8n.Status.Conditions, metav1.Condition{Type: typeDegradedN8n,
-				Status: metav1.ConditionUnknown, Reason: "Finalizing",
-				Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", n8n.Name)})
-			if err := r.Status().Update(ctx, n8n); err != nil {
-				log.Error(err, "Failed to update N8n status")
+			if err = r.updateStatus(ctx, n8n, typeDegradedN8n, metav1.ConditionUnknown, "Finalizing",
+				fmt.Sprintf("Performing finalizer operations for the custom resource: %s", n8n.Name)); err != nil {
 				return ctrl.Result{}, err
 			}
 
 			r.doFinalizerOperationsForN8n(n8n)
-			if err := r.Get(ctx, req.NamespacedName, n8n); err != nil {
-				log.Error(err, "Failed to re-fetch N8n")
-				return ctrl.Result{}, err
-			}
 
-			meta.SetStatusCondition(&n8n.Status.Conditions, metav1.Condition{Type: typeDegradedN8n,
-				Status: metav1.ConditionTrue, Reason: "Finalizing",
-				Message: fmt.Sprintf("Finalizer operations for custom resource %s name were successfully accomplished", n8n.Name)})
-			if err := r.Status().Update(ctx, n8n); err != nil {
-				log.Error(err, "Failed to update N8n status")
+			if err = r.updateStatus(ctx, n8n, typeDegradedN8n, metav1.ConditionTrue, "Finalizing",
+				fmt.Sprintf("Finalizer operations for custom resource %s were successfully accomplished", n8n.Name)); err != nil {
 				return ctrl.Result{}, err
 			}
-			log.Info("Removing Finalizer for n8n after successfully perform the operations")
 
 			if ok := controllerutil.RemoveFinalizer(n8n, n8nFinalizer); !ok {
 				log.Error(err, "Failed to remove finalizer for n8n")
 				return ctrl.Result{Requeue: true}, nil
 			}
-
 			if err := r.Update(ctx, n8n); err != nil {
 				log.Error(err, "Failed to remove finalizer for n8n")
 				return ctrl.Result{}, err
@@ -130,138 +114,35 @@ func (r *N8nReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, nil
 	}
 
-	found := &appsv1.Deployment{}
-	err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, found)
-
-	if err != nil && apierrors.IsNotFound(err) {
-		dep, err := r.deploymentForN8n(n8n)
-		if err != nil {
-			log.Error(err, "Failed to define new Deployment resource for n8n")
-			meta.SetStatusCondition(&n8n.Status.Conditions, metav1.Condition{Type: typeAvailableN8n,
-				Status: metav1.ConditionFalse, Reason: "Reconciling",
-				Message: fmt.Sprintf("Failed to create Deployment for the custom resource (%s): (%s)", n8n.Name, err)})
-			if err := r.Status().Update(ctx, n8n); err != nil {
-				log.Error(err, "Failed to update n8n status")
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, err
-		}
-		log.Info("Creating a new Deployment",
-			"Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-
-		if err = r.Create(ctx, dep); err != nil {
-			log.Error(err, "Failed to create new Deployment",
-				"Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-			return ctrl.Result{}, err
-		}
-
-		return ctrl.Result{RequeueAfter: time.Minute}, nil
-	} else if err != nil {
-		log.Error(err, "Failed to get Deployment")
+	// Reconcile Deployment
+	if err := r.createOrUpdateDeployment(ctx, n8n); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	defaultReplicas := int32(1)
-	if *found.Spec.Replicas != defaultReplicas {
-		found.Spec.Replicas = &defaultReplicas
-		if err = r.Update(ctx, found); err != nil {
-			log.Error(err, "Failed to update Deployment",
-				"Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
-
-			if err := r.Get(ctx, req.NamespacedName, n8n); err != nil {
-				log.Error(err, "Failed to re-fetch n8n")
-				return ctrl.Result{}, err
-			}
-
-			meta.SetStatusCondition(&n8n.Status.Conditions, metav1.Condition{Type: typeAvailableN8n,
-				Status: metav1.ConditionFalse, Reason: "Resizing",
-				Message: fmt.Sprintf("Failed to update the size for the custom resource (%s): (%s)", n8n.Name, err)})
-
-			if err := r.Status().Update(ctx, n8n); err != nil {
-				log.Error(err, "Failed to update N8n status")
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{Requeue: true}, nil
-	}
-	meta.SetStatusCondition(&n8n.Status.Conditions, metav1.Condition{Type: typeAvailableN8n,
-		Status: metav1.ConditionTrue, Reason: "Reconciling",
-		Message: fmt.Sprintf("Deployment for custom resource (%s) created successfully", n8n.Name)})
-
-	if err := r.Status().Update(ctx, n8n); err != nil {
-		log.Error(err, "Failed to update N8n status")
+	// Reconcile Service
+	if err := r.createOrUpdateService(ctx, n8n); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// Check if the service already exists, if not create a new one
-	service := &corev1.Service{}
-	err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, service)
-	if err != nil && apierrors.IsNotFound(err) {
-		svc := r.serviceForN8n(n8n)
-		log.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
-		err = r.Create(ctx, svc)
-		if err != nil {
-			log.Error(err, "Failed to create new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
-			return ctrl.Result{}, err
-		}
-	} else if err != nil {
-		log.Error(err, "Failed to get Service")
+	// Reconcile Ingress
+	if err := r.createOrUpdateIngress(ctx, n8n); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// Handle Ingress if enabled
-	if n8n.Spec.Ingress != nil && n8n.Spec.Ingress.Enable {
-		ingress := &networkingv1.Ingress{}
-		err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, ingress)
-		if err != nil && apierrors.IsNotFound(err) {
-			ing := r.ingressForN8n(n8n)
-			log.Info("Creating a new Ingress", "Ingress.Namespace", ing.Namespace, "Ingress.Name", ing.Name)
-			err = r.Create(ctx, ing)
-			if err != nil {
-				log.Error(err, "Failed to create new Ingress", "Ingress.Namespace", ing.Namespace, "Ingress.Name", ing.Name)
-				return ctrl.Result{}, err
-			}
-		} else if err != nil {
-			log.Error(err, "Failed to get Ingress")
-			return ctrl.Result{}, err
-		}
+	// Reconcile HTTPRoute
+	if err := r.createOrUpdateHTTPRoute(ctx, n8n); err != nil {
+		return ctrl.Result{}, err
 	}
 
-	// Handle HTTPRoute if enabled
-	if n8n.Spec.HTTPRoute != nil && n8n.Spec.HTTPRoute.Enable {
-		httpRoute := &gatewayv1.HTTPRoute{}
-		err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, httpRoute)
-		if err != nil && apierrors.IsNotFound(err) {
-			route := r.httpRouteForN8n(n8n)
-			log.Info("Creating a new HTTPRoute", "HTTPRoute.Namespace", route.Namespace, "HTTPRoute.Name", route.Name)
-			err = r.Create(ctx, route)
-			if err != nil {
-				log.Error(err, "Failed to create new HTTPRoute", "HTTPRoute.Namespace", route.Namespace, "HTTPRoute.Name", route.Name)
-				return ctrl.Result{}, err
-			}
-		} else if err != nil {
-			log.Error(err, "Failed to get HTTPRoute")
-			return ctrl.Result{}, err
-		}
+	// Reconcile ServiceMonitor
+	if err := r.createOrUpdateServiceMonitor(ctx, n8n); err != nil {
+		return ctrl.Result{}, err
 	}
 
-	// Handle ServiceMonitor if metrics are enabled
-	if n8n.Spec.Metrics != nil && n8n.Spec.Metrics.Enable {
-		serviceMonitor := &monitoringv1.ServiceMonitor{}
-		err = r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, serviceMonitor)
-		if err != nil && apierrors.IsNotFound(err) {
-			sm := r.serviceMonitorForN8n(n8n)
-			log.Info("Creating a new ServiceMonitor", "ServiceMonitor.Namespace", sm.Namespace, "ServiceMonitor.Name", sm.Name)
-			err = r.Create(ctx, sm)
-			if err != nil {
-				log.Error(err, "Failed to create new ServiceMonitor", "ServiceMonitor.Namespace", sm.Namespace, "ServiceMonitor.Name", sm.Name)
-				return ctrl.Result{}, err
-			}
-		} else if err != nil {
-			log.Error(err, "Failed to get ServiceMonitor")
-			return ctrl.Result{}, err
-		}
+	// Update status
+	if err := r.updateStatus(ctx, n8n, typeAvailableN8n, metav1.ConditionTrue, "Reconciling",
+		fmt.Sprintf("Resources for custom resource (%s) reconciled successfully", n8n.Name)); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
@@ -447,37 +328,7 @@ func (r *N8nReconciler) deploymentForN8n(
 			MountPath: "/home/node/.n8n",
 		})
 
-		// Create PVC if it doesn't exist
-		pvc := &corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      n8n.Name + "-data",
-				Namespace: n8n.Namespace,
-			},
-			Spec: corev1.PersistentVolumeClaimSpec{
-				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-				Resources: corev1.VolumeResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceStorage: resource.MustParse(n8n.Spec.PersistentStorage.Size),
-					},
-				},
-			},
-		}
-		if n8n.Spec.PersistentStorage.StorageClassName != "" {
-			pvc.Spec.StorageClassName = &n8n.Spec.PersistentStorage.StorageClassName
-		}
-
-		if err := ctrl.SetControllerReference(n8n, pvc, r.Scheme); err != nil {
-			return nil, err
-		}
-
-		// Create PVC if it doesn't exist
-		existingPvc := &corev1.PersistentVolumeClaim{}
-		err := r.Get(context.TODO(), types.NamespacedName{Name: pvc.Name, Namespace: pvc.Namespace}, existingPvc)
-		if err != nil && apierrors.IsNotFound(err) {
-			if err := r.Create(context.TODO(), pvc); err != nil {
-				return nil, err
-			}
-		} else if err != nil {
+		if err := r.createPVCIfNotExists(n8n); err != nil {
 			return nil, err
 		}
 	}
@@ -503,14 +354,8 @@ func (r *N8nReconciler) deploymentForN8n(
 					Labels: ls,
 				},
 				Spec: corev1.PodSpec{
-					SecurityContext: &corev1.PodSecurityContext{
-						RunAsNonRoot: &[]bool{true}[0],
-						SeccompProfile: &corev1.SeccompProfile{
-							Type: corev1.SeccompProfileTypeRuntimeDefault,
-						},
-						FSGroup: &[]int64{1000}[0],
-					},
-					Volumes: volumes,
+					SecurityContext: getPodSecurityContext(),
+					Volumes:         volumes,
 					InitContainers: []corev1.Container{{
 						Name:            "init-permissions",
 						Image:           "busybox",
@@ -530,75 +375,13 @@ func (r *N8nReconciler) deploymentForN8n(
 						Image:           image,
 						Name:            "n8n",
 						ImagePullPolicy: corev1.PullIfNotPresent,
-						SecurityContext: &corev1.SecurityContext{
-							RunAsNonRoot:             &[]bool{true}[0],
-							RunAsUser:                &[]int64{1000}[0],
-							AllowPrivilegeEscalation: &[]bool{false}[0],
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{
-									"ALL",
-								},
-							},
-						},
+						SecurityContext: getContainerSecurityContext(),
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 5678,
 							Name:          "http",
 						}},
-						Command: []string{"tini", "--", "/docker-entrypoint.sh"},
-						Env: []corev1.EnvVar{
-							{
-								Name:  "DB_TYPE",
-								Value: "postgresdb",
-							},
-							{
-								Name:  "DB_POSTGRESDB_HOST",
-								Value: n8n.Spec.Database.Postgres.Host,
-							},
-							{
-								Name:  "DB_POSTGRESDB_PORT",
-								Value: fmt.Sprintf("%d", n8n.Spec.Database.Postgres.Port),
-							},
-							{
-								Name:  "DB_POSTGRESDB_DATABASE",
-								Value: n8n.Spec.Database.Postgres.Database,
-							},
-							{
-								Name:  "DB_POSTGRESDB_USER",
-								Value: n8n.Spec.Database.Postgres.User,
-							},
-							{
-								Name:  "DB_POSTGRESDB_PASSWORD",
-								Value: n8n.Spec.Database.Postgres.Password,
-							},
-							{
-								Name:  "DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED",
-								Value: fmt.Sprintf("%t", !n8n.Spec.Database.Postgres.Ssl),
-							},
-							{
-								Name:  "N8N_USER_FOLDER",
-								Value: "/home/node",
-							},
-							{
-								Name:  "N8N_EDITOR_BASE_URL",
-								Value: fmt.Sprintf("https://%s", n8n.Spec.Hostname.Url),
-							},
-							{
-								Name:  "N8N_TEMPLATES_ENABLED",
-								Value: "true",
-							},
-							{
-								Name:  "N8N_HOST",
-								Value: fmt.Sprintf("https://%s", n8n.Spec.Hostname.Url),
-							},
-							{
-								Name:  "WEBHOOK_URL",
-								Value: n8n.Spec.Hostname.Url,
-							},
-							{
-								Name:  "N8N_METRICS",
-								Value: fmt.Sprintf("%t", n8n.Spec.Metrics != nil && n8n.Spec.Metrics.Enable),
-							},
-						},
+						Command:      []string{"tini", "--", "/docker-entrypoint.sh"},
+						Env:          getN8nEnvVars(n8n),
 						VolumeMounts: volumeMounts,
 					}},
 				},
