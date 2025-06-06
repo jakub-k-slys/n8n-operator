@@ -57,6 +57,7 @@ type Database struct {
 type IngressConfig struct {
 	// Enable indicates whether to create an Ingress resource
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Enable bool `json:"enable"`
 	// IngressClassName is the name of the IngressClass to use
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -77,19 +78,22 @@ type IngressTLS struct {
 }
 
 // HTTPRouteConfig defines the configuration for Gateway API HTTPRoute
+// +kubebuilder:validation:XValidation:rule="!self.enable || has(self.gatewayRef)",message="gatewayRef is required when enable is true"
 type HTTPRouteConfig struct {
 	// Enable indicates whether to create an HTTPRoute resource
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Enable bool `json:"enable"`
 	// GatewayRef is the name of the Gateway to attach to
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	GatewayRef GatewayRef `json:"gatewayRef"`
+	GatewayRef GatewayRef `json:"gatewayRef,omitempty"`
 }
 
 // GatewayRef defines the reference to a Gateway
 type GatewayRef struct {
 	// Name of the gateway
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// Namespace of the gateway
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -100,6 +104,7 @@ type GatewayRef struct {
 type PersistentStorageConfig struct {
 	// Enable indicates whether to create a PVC for n8n data
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Enable bool `json:"enable"`
 	// StorageClassName is the name of the StorageClass to use
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -113,11 +118,14 @@ type PersistentStorageConfig struct {
 // Metrics defines the configuration for metrics
 type MetricsConfig struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Enable bool `json:"enable"`
 }
 
+// +kubebuilder:validation:XValidation:rule="!self.enable || has(self.url)",message="url is required when enable is true"
 type HostnameConfig struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Enable bool `json:"enable"`
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -166,10 +174,10 @@ type N8nStatus struct {
 // N8n is the Schema for the n8ns API
 type N8n struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   N8nSpec   `json:"spec"`
-	Status N8nStatus `json:"status"`
+	Spec   N8nSpec   `json:"spec,omitempty"`
+	Status N8nStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -86,6 +86,9 @@ spec:
                 required:
                 - enable
                 type: object
+                x-kubernetes-validations:
+                - message: url is required when enable is true
+                  rule: '!self.enable || has(self.url)'
               httpRoute:
                 description: HTTPRoute configuration for the N8n instance
                 properties:
@@ -106,8 +109,10 @@ spec:
                     type: object
                 required:
                 - enable
-                - gatewayRef
                 type: object
+                x-kubernetes-validations:
+                - message: gatewayRef is required when enable is true
+                  rule: '!self.enable || has(self.gatewayRef)'
               ingress:
                 description: Ingress configuration for the N8n instance
                 properties:
