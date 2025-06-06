@@ -47,20 +47,48 @@ spec:
                       NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
                     properties:
                       database:
+                        minLength: 1
                         type: string
                       host:
+                        minLength: 1
                         type: string
                       password:
+                        minLength: 1
                         type: string
                       port:
                         format: int32
+                        maximum: 65535
+                        minimum: 1
                         type: integer
-                      sst:
+                      ssl:
                         type: boolean
                       user:
+                        minLength: 1
                         type: string
+                    required:
+                    - database
+                    - host
+                    - password
+                    - port
+                    - user
                     type: object
+                required:
+                - postgres
                 type: object
+              hostname:
+                properties:
+                  enable:
+                    type: boolean
+                  url:
+                    minLength: 1
+                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                    type: string
+                required:
+                - enable
+                type: object
+                x-kubernetes-validations:
+                - message: url is required when enable is true
+                  rule: '!self.enable || has(self.url)'
               httpRoute:
                 description: HTTPRoute configuration for the N8n instance
                 properties:
@@ -79,21 +107,18 @@ spec:
                     required:
                     - name
                     type: object
-                  hostname:
-                    description: Hostname is the host name to use for the HTTPRoute
-                    type: string
                 required:
                 - enable
                 type: object
+                x-kubernetes-validations:
+                - message: gatewayRef is required when enable is true
+                  rule: '!self.enable || has(self.gatewayRef)'
               ingress:
                 description: Ingress configuration for the N8n instance
                 properties:
                   enable:
                     description: Enable indicates whether to create an Ingress resource
                     type: boolean
-                  hostname:
-                    description: Hostname is the host name to use for the Ingress
-                    type: string
                   ingressClassName:
                     description: IngressClassName is the name of the IngressClass
                       to use
@@ -117,6 +142,14 @@ spec:
                 required:
                 - enable
                 type: object
+              metrics:
+                description: Metrics defines the configuration for metrics
+                properties:
+                  enable:
+                    type: boolean
+                required:
+                - enable
+                type: object
               persistentStorage:
                 description: PersistentStorage configuration for n8n data
                 properties:
@@ -135,6 +168,8 @@ spec:
                 required:
                 - enable
                 type: object
+            required:
+            - database
             type: object
           status:
             description: N8nStatus defines the observed state of N8n

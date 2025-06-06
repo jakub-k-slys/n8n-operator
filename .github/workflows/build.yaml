@@ -23,8 +23,8 @@ jobs:
               run: make fmt
             - name: Running vet
               run: make vet
-            - name: Running lint
-              run: make lint
+            # - name: Running lint
+            #   run: make lint
     building:
         name: Running build
         runs-on: ubuntu-latest

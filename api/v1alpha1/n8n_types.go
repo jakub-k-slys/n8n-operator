@@ -24,32 +24,41 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type Postgres struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Host string `json:"host,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Host string `json:"host"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Port uint32 `json:"port,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port uint32 `json:"port"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Database string `json:"database,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Database string `json:"database"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	User string `json:"user,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	User string `json:"user"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Password string `json:"password,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Password string `json:"password"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Ssl bool `json:"sst,omitempty"`
+	Ssl bool `json:"ssl,omitempty"`
 }
 
 type Database struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Postgres Postgres `json:"postgres,omitempty"`
+	Postgres Postgres `json:"postgres"`
 }
 
 // IngressConfig defines the configuration for Kubernetes Ingress
 type IngressConfig struct {
 	// Enable indicates whether to create an Ingress resource
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Enable bool `json:"enable"`
-	// Hostname is the host name to use for the Ingress
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Hostname string `json:"hostname,omitempty"`
 	// IngressClassName is the name of the IngressClass to use
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	IngressClassName string `json:"ingressClassName,omitempty"`
@@ -69,13 +78,12 @@ type IngressTLS struct {
 }
 
 // HTTPRouteConfig defines the configuration for Gateway API HTTPRoute
+// +kubebuilder:validation:XValidation:rule="!self.enable || has(self.gatewayRef)",message="gatewayRef is required when enable is true"
 type HTTPRouteConfig struct {
 	// Enable indicates whether to create an HTTPRoute resource
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Enable bool `json:"enable"`
-	// Hostname is the host name to use for the HTTPRoute
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Hostname string `json:"hostname,omitempty"`
 	// GatewayRef is the name of the Gateway to attach to
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	GatewayRef GatewayRef `json:"gatewayRef,omitempty"`
@@ -85,6 +93,7 @@ type HTTPRouteConfig struct {
 type GatewayRef struct {
 	// Name of the gateway
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// Namespace of the gateway
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -95,6 +104,7 @@ type GatewayRef struct {
 type PersistentStorageConfig struct {
 	// Enable indicates whether to create a PVC for n8n data
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
 	Enable bool `json:"enable"`
 	// StorageClassName is the name of the StorageClass to use
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -105,13 +115,32 @@ type PersistentStorageConfig struct {
 	Size string `json:"size,omitempty"`
 }
 
+// Metrics defines the configuration for metrics
+type MetricsConfig struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
+	Enable bool `json:"enable"`
+}
+
+// +kubebuilder:validation:XValidation:rule="!self.enable || has(self.url)",message="url is required when enable is true"
+type HostnameConfig struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Required
+	Enable bool `json:"enable"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+	// +kubebuilder:validation:MinLength=1
+	Url string `json:"url,omitempty"`
+}
+
 // N8nSpec defines the desired state of N8n
 type N8nSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Database Database `json:"database,omitempty"`
+	Database Database `json:"database"`
 
 	// Ingress configuration for the N8n instance
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
@@ -124,6 +153,12 @@ type N8nSpec struct {
 	// PersistentStorage configuration for n8n data
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	PersistentStorage *PersistentStorageConfig `json:"persistentStorage,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Metrics *MetricsConfig `json:"metrics,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	Hostname *HostnameConfig `json:"hostname,omitempty"`
 }
 
 // N8nStatus defines the observed state of N8n
@@ -150,7 +185,7 @@ type N8n struct {
 // N8nList contains a list of N8n
 type N8nList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 	Items           []N8n `json:"items"`
 }
 
