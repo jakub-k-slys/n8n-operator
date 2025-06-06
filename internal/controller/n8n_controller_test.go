@@ -206,21 +206,75 @@ var _ = Describe("N8n Controller", func() {
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 
-			// Wait for reconciliation to complete and verify ServiceMonitor is not created
-			Eventually(func() bool {
-				// Reconcile
+			// First reconciliation
+			Eventually(func() error {
 				_, err := reconciler.Reconcile(ctx, reconcile.Request{
 					NamespacedName: typeNamespacedName,
 				})
-				if err != nil {
+				return err
+			}, time.Second*10, time.Millisecond*100).Should(Succeed())
+
+			// Verify ServiceMonitor is not created
+			sm := &monitoringv1.ServiceMonitor{}
+			err := k8sClient.Get(ctx, typeNamespacedName, sm)
+			Expect(err).To(HaveOccurred())
+			Expect(errors.IsNotFound(err)).To(BeTrue())
+
+			// Update resource to enable metrics
+			Eventually(func() error {
+				updated := &cachev1alpha1.N8n{}
+				if err := k8sClient.Get(ctx, typeNamespacedName, updated); err != nil {
+					return err
+				}
+				updated.Spec.Metrics = &cachev1alpha1.MetricsConfig{
+					Enable: true,
+				}
+				return k8sClient.Update(ctx, updated)
+			}, time.Second*5, time.Millisecond*100).Should(Succeed())
+
+			// Wait for reconciliation after update
+			Eventually(func() error {
+				_, err := reconciler.Reconcile(ctx, reconcile.Request{
+					NamespacedName: typeNamespacedName,
+				})
+				return err
+			}, time.Second*10, time.Millisecond*100).Should(Succeed())
+
+			// Verify ServiceMonitor is created
+			Eventually(func() bool {
+				sm := &monitoringv1.ServiceMonitor{}
+				if err := k8sClient.Get(ctx, typeNamespacedName, sm); err != nil {
 					return false
 				}
+				return len(sm.Spec.Endpoints) == 1 &&
+					sm.Spec.Endpoints[0].Path == "/metrics"
+			}, time.Second*5, time.Millisecond*100).Should(BeTrue())
 
-				// Check ServiceMonitor
-				sm := &monitoringv1.ServiceMonitor{}
-				err = k8sClient.Get(ctx, typeNamespacedName, sm)
+			// Update resource to disable metrics
+			Eventually(func() error {
+				updated := &cachev1alpha1.N8n{}
+				if err := k8sClient.Get(ctx, typeNamespacedName, updated); err != nil {
+					return err
+				}
+				updated.Spec.Metrics = &cachev1alpha1.MetricsConfig{
+					Enable: false,
+				}
+				return k8sClient.Update(ctx, updated)
+			}, time.Second*5, time.Millisecond*100).Should(Succeed())
+
+			// Wait for reconciliation after update
+			Eventually(func() error {
+				_, err := reconciler.Reconcile(ctx, reconcile.Request{
+					NamespacedName: typeNamespacedName,
+				})
+				return err
+			}, time.Second*10, time.Millisecond*100).Should(Succeed())
+
+			// Verify ServiceMonitor is deleted
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, typeNamespacedName, &monitoringv1.ServiceMonitor{})
 				return errors.IsNotFound(err)
-			}, time.Second*15, time.Millisecond*100).Should(BeTrue(), "ServiceMonitor should not exist")
+			}, time.Second*5, time.Millisecond*100).Should(BeTrue())
 
 			// Cleanup
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())

@@ -93,11 +93,24 @@ func (r *N8nReconciler) createOrUpdateHTTPRoute(ctx context.Context, n8n *n8nv1a
 }
 
 func (r *N8nReconciler) createOrUpdateServiceMonitor(ctx context.Context, n8n *n8nv1alpha1.N8n) error {
+	sm := &monitoringv1.ServiceMonitor{}
+	err := r.Get(ctx, types.NamespacedName{Name: n8n.Name, Namespace: n8n.Namespace}, sm)
+
+	// If metrics are disabled, delete the ServiceMonitor if it exists
 	if n8n.Spec.Metrics == nil || !n8n.Spec.Metrics.Enable {
-		return nil
+		if err == nil {
+			return r.Delete(ctx, sm)
+		}
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	}
-	return r.reconcileResource(ctx, n8n, &monitoringv1.ServiceMonitor{}, func() error {
-		sm := r.serviceMonitorForN8n(n8n)
+
+	// Create ServiceMonitor if it doesn't exist
+	if apierrors.IsNotFound(err) {
+		sm = r.serviceMonitorForN8n(n8n)
 		return r.Create(ctx, sm)
-	})
+	}
+	return err
 }
