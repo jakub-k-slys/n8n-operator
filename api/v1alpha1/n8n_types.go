@@ -34,7 +34,7 @@ type Postgres struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Password string `json:"password,omitempty"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Ssl bool `json:"sst,omitempty"`
+	Ssl bool `json:"ssl,omitempty"`
 }
 
 type Database struct {

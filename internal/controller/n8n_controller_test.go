@@ -81,4 +81,64 @@ var _ = Describe("N8n Controller", func() {
 			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
+
+	Context("When testing environment variable construction", func() {
+		It("should set only N8N_USER_FOLDER when no database is configured", func() {
+			n8n := &cachev1alpha1.N8n{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-n8n",
+					Namespace: "default",
+				},
+				Spec: cachev1alpha1.N8nSpec{
+					// No database configuration
+				},
+			}
+
+			envVars := BuildEnvVars(n8n)
+
+			Expect(envVars).To(HaveLen(1))
+			Expect(envVars[0].Name).To(Equal("N8N_USER_FOLDER"))
+			Expect(envVars[0].Value).To(Equal("/home/node"))
+		})
+
+		It("should set database environment variables when database is configured", func() {
+			n8n := &cachev1alpha1.N8n{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-n8n",
+					Namespace: "default",
+				},
+				Spec: cachev1alpha1.N8nSpec{
+					Database: cachev1alpha1.Database{
+						Postgres: cachev1alpha1.Postgres{
+							Host:     "postgres-host",
+							Port:     5432,
+							Database: "n8n",
+							User:     "n8n-user",
+							Password: "password",
+							Ssl:      true,
+						},
+					},
+				},
+			}
+
+			envVars := BuildEnvVars(n8n)
+
+			Expect(envVars).To(HaveLen(8))
+
+			// Check that all expected environment variables are present
+			envMap := make(map[string]string)
+			for _, env := range envVars {
+				envMap[env.Name] = env.Value
+			}
+
+			Expect(envMap["N8N_USER_FOLDER"]).To(Equal("/home/node"))
+			Expect(envMap["DB_TYPE"]).To(Equal("postgresdb"))
+			Expect(envMap["DB_POSTGRESDB_HOST"]).To(Equal("postgres-host"))
+			Expect(envMap["DB_POSTGRESDB_PORT"]).To(Equal("5432"))
+			Expect(envMap["DB_POSTGRESDB_DATABASE"]).To(Equal("n8n"))
+			Expect(envMap["DB_POSTGRESDB_USER"]).To(Equal("n8n-user"))
+			Expect(envMap["DB_POSTGRESDB_PASSWORD"]).To(Equal("password"))
+			Expect(envMap["DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED"]).To(Equal("false")) // SSL is true, so reject unauthorized should be false
+		})
+	})
 })

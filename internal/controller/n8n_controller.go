@@ -489,41 +489,8 @@ func (r *N8nReconciler) deploymentForN8n(
 							ContainerPort: 5678,
 							Name:          "http",
 						}},
-						Command: []string{"tini", "--", "/docker-entrypoint.sh"},
-						Env: []corev1.EnvVar{
-							{
-								Name:  "DB_TYPE",
-								Value: "postgresdb",
-							},
-							{
-								Name:  "DB_POSTGRESDB_HOST",
-								Value: n8n.Spec.Database.Postgres.Host,
-							},
-							{
-								Name:  "DB_POSTGRESDB_PORT",
-								Value: fmt.Sprintf("%d", n8n.Spec.Database.Postgres.Port),
-							},
-							{
-								Name:  "DB_POSTGRESDB_DATABASE",
-								Value: n8n.Spec.Database.Postgres.Database,
-							},
-							{
-								Name:  "DB_POSTGRESDB_USER",
-								Value: n8n.Spec.Database.Postgres.User,
-							},
-							{
-								Name:  "DB_POSTGRESDB_PASSWORD",
-								Value: n8n.Spec.Database.Postgres.Password,
-							},
-							{
-								Name:  "DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED",
-								Value: fmt.Sprintf("%t", !n8n.Spec.Database.Postgres.Ssl),
-							},
-							{
-								Name:  "N8N_USER_FOLDER",
-								Value: "/home/node",
-							},
-						},
+						Command:      []string{"tini", "--", "/docker-entrypoint.sh"},
+						Env:          BuildEnvVars(n8n),
 						VolumeMounts: volumeMounts,
 					}},
 				},
@@ -534,6 +501,51 @@ func (r *N8nReconciler) deploymentForN8n(
 		return nil, err
 	}
 	return dep, nil
+}
+
+func BuildEnvVars(n8n *n8nv1alpha1.N8n) []corev1.EnvVar {
+	envVars := []corev1.EnvVar{
+		{
+			Name:  "N8N_USER_FOLDER",
+			Value: "/home/node",
+		},
+	}
+
+	// Only set database environment variables if database configuration is provided
+	if n8n.Spec.Database.Postgres.Host != "" {
+		envVars = append(envVars, []corev1.EnvVar{
+			{
+				Name:  "DB_TYPE",
+				Value: "postgresdb",
+			},
+			{
+				Name:  "DB_POSTGRESDB_HOST",
+				Value: n8n.Spec.Database.Postgres.Host,
+			},
+			{
+				Name:  "DB_POSTGRESDB_PORT",
+				Value: fmt.Sprintf("%d", n8n.Spec.Database.Postgres.Port),
+			},
+			{
+				Name:  "DB_POSTGRESDB_DATABASE",
+				Value: n8n.Spec.Database.Postgres.Database,
+			},
+			{
+				Name:  "DB_POSTGRESDB_USER",
+				Value: n8n.Spec.Database.Postgres.User,
+			},
+			{
+				Name:  "DB_POSTGRESDB_PASSWORD",
+				Value: n8n.Spec.Database.Postgres.Password,
+			},
+			{
+				Name:  "DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED",
+				Value: fmt.Sprintf("%t", !n8n.Spec.Database.Postgres.Ssl),
+			},
+		}...)
+	}
+
+	return envVars
 }
 
 func labelsForN8n() map[string]string {
