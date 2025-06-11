@@ -1,0 +1,39 @@
+name: Publish to the catalog
+on:
+    workflow_dispatch:
+jobs:
+    publishing:
+        name: Build Docker image and push it to the registry
+        runs-on: ubuntu-latest
+        permissions:
+            packages: write
+            contents: read
+        steps:
+            - name: Check out the repo
+              uses: actions/checkout@v4
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+            - name: Log in to the Container registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Extract metadata (tags, labels) for Docker
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: |
+                      ghcr.io/${{ github.repository }}
+            - name: set CATALOG_IMG env
+              run: echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:v${{ steps.meta.outputs.version }}" >> $GITHUB_ENV
+            - name: set VERSION env
+              run: echo "VERSION=${{ steps.meta.outputs.version }}" >> $GITHUB_ENV
+            - name: Make catalog build
+              run: |
+                make catalog-build
+            - name: Push catalog
+              run: |
+                make catalog-push
