@@ -62,6 +62,8 @@ The operator supports PostgreSQL database configuration with the following optio
 - User authentication
 - SSL support
 
+**Note:** Database configuration is optional. If no database configuration is provided, n8n will use its default SQLite database for development/testing purposes.
+
 Example configuration:
 ```yaml
 apiVersion: n8n.slys.dev/v1alpha1
