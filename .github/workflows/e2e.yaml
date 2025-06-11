@@ -24,11 +24,21 @@ jobs:
             - name: Create k8s Kind Cluster
               uses: helm/kind-action@v1
             - name: Wait for cluster to be ready
-              run: kubectl wait --for=condition=Ready pod --all -A
-            - name: Try the cluster!
-              run: kubectl get pods -A
+              run: |
+                kubectl wait --for=condition=Ready nodes --all --timeout=300s
+                kubectl wait --for=condition=Ready pod --all -A --timeout=300s
+            - name: Test cluster connectivity
+              run: |
+                kubectl get pods -A
+                kubectl cluster-info
+            - name: Test external connectivity  
+              run: |
+                echo "Testing connectivity to external dependencies..."
+                curl -sI https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.72.0/bundle.yaml | head -1
+                curl -sI https://github.com/jetstack/cert-manager/releases/download/v1.14.4/cert-manager.yaml | head -1
             - name: set KIND_CLUSTER env
               run: echo "KIND_CLUSTER=$(kubectl config current-context)" >> $GITHUB_ENV
             - run: go version
             - name: Running e2e tests
               run: make test-e2e
+              timeout-minutes: 30
