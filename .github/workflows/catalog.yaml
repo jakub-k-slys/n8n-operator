@@ -37,7 +37,7 @@ jobs:
                   images: |
                       ghcr.io/${{ github.repository }}
             - name: set CATALOG_IMG env
-              run: echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:v${{ steps.meta.outputs.version }}" >> $GITHUB_ENV
+              run: echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:v${{ steps.gettag.outputs.tag }}" >> $GITHUB_ENV
             - name: Make catalog build
               run: |
                 make catalog-build
