@@ -11,6 +11,8 @@ jobs:
         steps:
             - name: Check out the repo
               uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
             - name: Get Tag
               id: gettag
               uses: WyriHaximus/github-action-get-previous-tag@v1
