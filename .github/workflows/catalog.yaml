@@ -11,6 +11,13 @@ jobs:
         steps:
             - name: Check out the repo
               uses: actions/checkout@v4
+            - name: Get Tag
+              id: gettag
+              uses: WyriHaximus/github-action-get-previous-tag@v1
+              with:
+                fallback: 0.0.1          
+            - name: set VERSION env
+              run: echo "VERSION=${{ steps.gettag.outputs.tag }}" >> $GITHUB_ENV
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
@@ -29,8 +36,6 @@ jobs:
                       ghcr.io/${{ github.repository }}
             - name: set CATALOG_IMG env
               run: echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:v${{ steps.meta.outputs.version }}" >> $GITHUB_ENV
-            - name: set VERSION env
-              run: echo "VERSION=${{ steps.meta.outputs.version }}" >> $GITHUB_ENV
             - name: Make catalog build
               run: |
                 make catalog-build
