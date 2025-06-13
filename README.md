@@ -22,7 +22,7 @@ The n8n-operator automates the deployment and management of n8n workflow automat
 
 ## Quick Start
 
-Create an n8n instance:
+Create an n8n instance with Ingress:
 ```yaml
 apiVersion: n8n.slys.dev/v1alpha1
 kind: N8n
@@ -36,9 +36,151 @@ spec:
       database: "n8n"
       user: "n8n-user"
       password: "password"
+      ssl: false
   ingress:
     enable: true
-    hostname: "n8n.example.com"
+    ingressClassName: "nginx"
+```
+
+Alternatively, using Gateway API HTTPRoute:
+```yaml
+apiVersion: n8n.slys.dev/v1alpha1
+kind: N8n
+metadata:
+  name: n8n-sample
+spec:
+  database:
+    postgres:
+      host: "postgres-host"
+      port: 5432
+      database: "n8n"
+      user: "n8n-user"
+      password: "password"
+      ssl: false
+  httpRoute:
+    enable: true
+    gatewayRef:
+      name: "gateway"
+      namespace: "default"
+```
+
+## Configuration Reference
+
+### Complete Configuration Example
+
+```yaml
+apiVersion: n8n.slys.dev/v1alpha1
+kind: N8n
+metadata:
+  name: n8n-complete
+spec:
+  # Database configuration (required)
+  database:
+    postgres:
+      host: "postgres-host"
+      port: 5432
+      database: "n8n"
+      user: "n8n-user"
+      password: "password"
+      ssl: true  # Optional: enable SSL connection
+  
+  # Ingress configuration (optional)
+  # Note: Cannot be used together with httpRoute
+  ingress:
+    enable: true
+    ingressClassName: "nginx"
+    tls:
+      - hosts:
+          - "n8n.example.com"
+        secretName: "n8n-tls"
+  
+  # HTTPRoute configuration (optional)
+  # Note: Cannot be used together with ingress
+  httpRoute:
+    enable: false
+    gatewayRef:
+      name: "gateway"
+      namespace: "default"
+  
+  # Persistent storage configuration (optional)
+  persistentStorage:
+    enable: true
+    storageClassName: "standard"
+    size: "10Gi"  # Defaults to "10Gi" if not specified
+  
+  # Metrics configuration (optional)
+  metrics:
+    enable: true
+  
+  # Hostname configuration (optional)
+  hostname:
+    enable: true
+    url: "n8n.example.com"
+```
+
+### Database Configuration
+
+The `database` field is required and currently supports PostgreSQL:
+
+```yaml
+database:
+  postgres:
+    host: "postgres-host"        # Required: PostgreSQL host
+    port: 5432                   # Required: PostgreSQL port (1-65535)
+    database: "n8n"             # Required: Database name
+    user: "n8n-user"            # Required: Database user
+    password: "password"         # Required: Database password
+    ssl: false                   # Optional: Enable SSL connection
+```
+
+### Traffic Routing Configuration
+
+**Important**: Ingress and HTTPRoute cannot both be enabled simultaneously.
+
+#### Kubernetes Ingress
+
+```yaml
+ingress:
+  enable: true                   # Required when using ingress
+  ingressClassName: "nginx"      # Optional: IngressClass to use
+  tls:                          # Optional: TLS configuration
+    - hosts:
+        - "n8n.example.com"
+      secretName: "n8n-tls"
+```
+
+#### Gateway API HTTPRoute
+
+```yaml
+httpRoute:
+  enable: true                   # Required when using HTTPRoute
+  gatewayRef:                   # Required when HTTPRoute is enabled
+    name: "gateway"             # Required: Gateway name
+    namespace: "default"        # Optional: Gateway namespace
+```
+
+### Storage Configuration
+
+```yaml
+persistentStorage:
+  enable: true                   # Required when using persistent storage
+  storageClassName: "standard"   # Optional: StorageClass to use
+  size: "10Gi"                  # Optional: Volume size (defaults to "10Gi")
+```
+
+### Metrics Configuration
+
+```yaml
+metrics:
+  enable: true                   # Required when enabling metrics
+```
+
+### Hostname Configuration
+
+```yaml
+hostname:
+  enable: true                   # Required when using hostname
+  url: "n8n.example.com"        # Required when hostname is enabled
 ```
 
 ## Documentation
