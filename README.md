@@ -52,11 +52,11 @@ kubectl apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: n8n-operator-catalog
+  name: operator-catalog
   namespace: olm
 spec:
   sourceType: grpc
-  image: ghcr.io/jakub-k-slys/n8n-operator-catalog:v0.0.1
+  image: ghcr.io/jakub-k-slys/operator-catalog:v0.0.1
   displayName: N8n Operator Catalog
   publisher: jakub-k-slys
 EOF
@@ -71,7 +71,7 @@ metadata:
 spec:
   channel: alpha
   name: n8n-operator
-  source: n8n-operator-catalog
+  source: operator-catalog
   sourceNamespace: olm
 EOF
 ```
