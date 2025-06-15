@@ -3,3 +3,8 @@ theme:
   name: material
 plugins:
   - search
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - About: about.md

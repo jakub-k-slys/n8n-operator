@@ -6,8 +6,9 @@ Welcome to the n8n Operator documentation. This operator automates the deploymen
 
 1. [Installation Guide](installation.md)
    * Prerequisites
-   * Installation Steps
-   * Project Distribution
+   * Installation Methods (OLM Catalog, Direct Installation, From Source)
+   * Verification
+   * Development Installation
    * Uninstallation
 
 2. [Configuration Guide](configuration.md)
@@ -22,6 +23,13 @@ Welcome to the n8n Operator documentation. This operator automates the deploymen
    - API Specifications
 
 ## Features
+
+The n8n-operator automates the deployment and management of n8n workflow automation instances on Kubernetes. It provides:
+
+- Automated deployment of n8n instances with PostgreSQL database configuration
+- Support for both Kubernetes Ingress and Gateway API HTTPRoute for traffic routing
+- Secure defaults with non-root container execution
+- Automated TLS configuration for secure access
 
 ### Traffic Routing
 - Support for Kubernetes Ingress
