@@ -42,7 +42,7 @@ func warnError(err error) {
 // InstallPrometheusOperator installs the prometheus Operator to be used to export the enabled metrics.
 func InstallPrometheusOperator() error {
 	url := fmt.Sprintf(prometheusOperatorURL, prometheusOperatorVersion)
-	
+
 	// Retry installation up to 3 times due to potential network issues
 	var lastErr error
 	for i := 0; i < 3; i++ {
@@ -53,7 +53,7 @@ func InstallPrometheusOperator() error {
 		}
 		lastErr = err
 		_, _ = fmt.Fprintf(GinkgoWriter, "Prometheus operator installation attempt %d failed: %v\n", i+1, err)
-		
+
 		if i < 2 { // Don't sleep after the last attempt
 			time.Sleep(time.Second * 10)
 		}
@@ -102,7 +102,7 @@ func UninstallCertManager() {
 // InstallCertManager installs the cert manager bundle.
 func InstallCertManager() error {
 	url := fmt.Sprintf(certmanagerURLTmpl, certmanagerVersion)
-	
+
 	// Retry installation up to 3 times due to potential network issues
 	var lastErr error
 	for i := 0; i < 3; i++ {
@@ -115,7 +115,7 @@ func InstallCertManager() error {
 			}
 			continue
 		}
-		
+
 		// Wait for cert-manager-webhook to be ready, which can take time if cert-manager
 		// was re-installed after uninstalling on a cluster.
 		cmd = exec.Command("kubectl", "wait", "deployment.apps/cert-manager-webhook",

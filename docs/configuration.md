@@ -102,6 +102,39 @@ spec:
     size: "10Gi"  # Optional, defaults to "10Gi"
 ```
 
+## Metrics Configuration
+
+Enable Prometheus metrics collection for monitoring n8n instances:
+
+```yaml
+apiVersion: n8n.slys.dev/v1alpha1
+kind: N8n
+metadata:
+  name: n8n-sample
+spec:
+  metrics:
+    enable: true
+```
+
+When enabled, this creates a ServiceMonitor resource for Prometheus integration.
+
+## Hostname Configuration
+
+Configure custom hostname for n8n instances:
+
+```yaml
+apiVersion: n8n.slys.dev/v1alpha1
+kind: N8n
+metadata:
+  name: n8n-sample
+spec:
+  hostname:
+    enable: true
+    url: "n8n.example.com"
+```
+
+The hostname configuration works in conjunction with your chosen traffic routing method (Ingress or HTTPRoute).
+
 ## Security Configuration
 
 The n8n operator implements several security features:
@@ -153,3 +186,13 @@ spec:
     enable: true
     storageClassName: "standard"
     size: "20Gi"
+
+  # Metrics Configuration
+  metrics:
+    enable: true
+
+  # Hostname Configuration
+  hostname:
+    enable: true
+    url: "n8n.example.com"
+```
