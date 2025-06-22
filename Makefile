@@ -5,6 +5,10 @@
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 0.0.1
 
+# N8N_VERSION defines the default n8n version to use
+# This can be overridden by setting the environment variable or by reading from .version file
+N8N_VERSION ?= $(shell if [ -f .version ]; then cat .version | tr -d '\n'; else echo "1.85.3"; fi)
+
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
 # To re-generate a bundle for other specific channels without changing the standard setup, you can:
@@ -134,7 +138,7 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
-	go build -o bin/manager cmd/main.go
+	go build -ldflags="-X 'github.com/jakub-k-slys/n8n-operator/internal/controller.BuildTimeN8nVersion=$(N8N_VERSION)'" -o bin/manager cmd/main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -145,7 +149,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build -t ${IMG} -t ${IMG_LATEST} .
+	$(CONTAINER_TOOL) build -t ${IMG} -t ${IMG_LATEST} --build-arg N8N_VERSION=${N8N_VERSION} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -164,7 +168,7 @@ docker-buildx: ## Build and push docker image for the manager for cross-platform
 	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
 	- $(CONTAINER_TOOL) buildx create --name n8n-operator-builder
 	$(CONTAINER_TOOL) buildx use n8n-operator-builder
-	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG} --tag ${IMG_LATEST} -f Dockerfile.cross .
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG} --tag ${IMG_LATEST} --build-arg N8N_VERSION=${N8N_VERSION} -f Dockerfile.cross .
 	- $(CONTAINER_TOOL) buildx rm n8n-operator-builder
 	rm Dockerfile.cross
 
