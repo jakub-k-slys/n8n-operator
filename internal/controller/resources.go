@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"os"
 	"strings"
 
 	n8nv1alpha1 "github.com/jakub-k-slys/n8n-operator/api/v1alpha1"
@@ -10,8 +11,33 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-const n8nVersion = "1.85.3"
-const n8nDockerImage = "ghcr.io/n8n-io/n8n:" + n8nVersion
+const defaultN8nVersion = "1.85.3"
+
+// BuildTimeN8nVersion is set at build time via ldflags
+var BuildTimeN8nVersion string
+
+// getN8nVersion determines the n8n version to use
+// Priority: 1) Build-time injected version, 2) .version file, 3) default constant
+func getN8nVersion() string {
+	// Use build-time injected version if available
+	if BuildTimeN8nVersion != "" {
+		return BuildTimeN8nVersion
+	}
+
+	// Try to read version from .version file
+	if versionBytes, err := os.ReadFile(".version"); err == nil {
+		version := strings.TrimSpace(string(versionBytes))
+		if version != "" {
+			return version
+		}
+	}
+
+	// Fallback to default version
+	return defaultN8nVersion
+}
+
+var n8nVersion = getN8nVersion()
+var n8nDockerImage = "ghcr.io/n8n-io/n8n:" + n8nVersion
 
 func labelsForN8n() map[string]string {
 	var imageTag string

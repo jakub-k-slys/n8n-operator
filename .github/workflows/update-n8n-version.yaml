@@ -1,0 +1,36 @@
+name: Update n8n Version
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+jobs:
+  update-version:
+    name: Check and update n8n version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+      - name: Set up Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+      - name: Update n8n version
+        id: update
+        run: |
+          if ./scripts/update-n8n-version.sh; then
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "new_version=$(cat .version)" >> $GITHUB_OUTPUT
+          else
+            echo "updated=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Commit and push changes
+        if: steps.update.outputs.updated == 'true'
+        run: |
+          git add .version
+          git commit -m "feat: update n8n version to ${{ steps.update.outputs.new_version }}"
+          git push origin main
