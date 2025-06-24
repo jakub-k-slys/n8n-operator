@@ -16,17 +16,80 @@ jobs:
             - name: Get Current Tag (Latest)
               id: current_tag
               run: echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
-            - name: Get Previous Tag
-              id: previous_tag
-              uses: WyriHaximus/github-action-get-previous-tag@v1
-              with:
-                fallback: 0.0.1
+            - name: Get Latest Catalog Version from Registry
+              id: registry_tag
+              run: |
+                # Query GHCR for available catalog versions
+                TOKEN="${{ secrets.GITHUB_TOKEN }}"
+                REPO_OWNER="jakub-k-slys"
+                PACKAGE_NAME="operator-catalog"
+                REGISTRY_URL="ghcr.io/${REPO_OWNER}/${PACKAGE_NAME}"
+                
+                echo "Querying GitHub Container Registry for available catalog versions..."
+                echo "Registry URL: ${REGISTRY_URL}"
+                
+                # Try multiple approaches to get available versions
+                LATEST_VERSION=""
+                
+                # Approach 1: Use GitHub API
+                echo "Attempting to query GitHub Packages API..."
+                RESPONSE=$(curl -s -f -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Accept: application/vnd.github.v3+json" \
+                  "https://api.github.com/users/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions" 2>/dev/null || echo "[]")
+                
+                if [ "$RESPONSE" != "[]" ] && [ -n "$RESPONSE" ]; then
+                  echo "API response received, parsing versions..."
+                  # Extract version tags, exclude current version, sort and get latest
+                  CURRENT_VERSION="${{ steps.current_tag.outputs.tag }}"
+                  LATEST_VERSION=$(echo "$RESPONSE" | jq -r '.[].metadata.container.tags[]?' 2>/dev/null | \
+                    grep -v "^${CURRENT_VERSION}$" | \
+                    grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | \
+                    sort -V | tail -1 || echo "")
+                else
+                  echo "API query failed or returned empty response"
+                fi
+                
+                # Approach 2: If API fails, try using crane/skopeo if available
+                if [ -z "$LATEST_VERSION" ]; then
+                  echo "Attempting to use container registry tools..."
+                  # Install crane as backup
+                  if ! command -v crane &> /dev/null; then
+                    echo "Installing crane..."
+                    curl -sL "https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz" | tar xz -C /tmp
+                    sudo mv /tmp/crane /usr/local/bin/
+                  fi
+                  
+                  # Try to list tags using crane
+                  if command -v crane &> /dev/null; then
+                    echo "Using crane to list registry tags..."
+                    CURRENT_VERSION="${{ steps.current_tag.outputs.tag }}"
+                    LATEST_VERSION=$(echo "${TOKEN}" | crane auth login ghcr.io --username ${REPO_OWNER} --password-stdin 2>/dev/null && \
+                      crane ls "${REGISTRY_URL}" 2>/dev/null | \
+                      grep -v "^${CURRENT_VERSION}$" | \
+                      grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | \
+                      sort -V | tail -1 || echo "")
+                  fi
+                fi
+                
+                echo "Current version: ${{ steps.current_tag.outputs.tag }}"
+                echo "Latest registry version: ${LATEST_VERSION}"
+                
+                if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ] && [ "$LATEST_VERSION" != "" ]; then
+                  echo "tag=${LATEST_VERSION}" >> $GITHUB_OUTPUT
+                  echo "found=true" >> $GITHUB_OUTPUT
+                  echo "✅ Found latest catalog version in registry: ${LATEST_VERSION}"
+                else
+                  echo "No previous catalog versions found in registry"
+                  echo "found=false" >> $GITHUB_OUTPUT
+                  echo "ℹ️ Will build catalog from scratch (no base image)"
+                fi
             - name: set VERSION env
               run: echo "VERSION=${{ steps.current_tag.outputs.tag }}" >> $GITHUB_ENV
             - name: Debug version information
               run: |
                 echo "Current tag: ${{ steps.current_tag.outputs.tag }}"
-                echo "Previous tag: ${{ steps.previous_tag.outputs.tag }}"
+                echo "Latest registry catalog version: ${{ steps.registry_tag.outputs.tag }}"
+                echo "Registry version found: ${{ steps.registry_tag.outputs.found }}"
                 echo "VERSION: ${{ steps.current_tag.outputs.tag }}"
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v3
@@ -47,14 +110,15 @@ jobs:
             - name: set CATALOG_IMG env
               run: |
                 echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.current_tag.outputs.tag }}" >> $GITHUB_ENV
-            - name: set CATALOG_BASE_IMG env (if not first build)
+            - name: set CATALOG_BASE_IMG env (if previous version exists in registry)
               run: |
-                if [ "${{ steps.previous_tag.outputs.tag }}" != "0.0.1" ] && \
-                   [ "${{ steps.previous_tag.outputs.tag }}" != "${{ steps.current_tag.outputs.tag }}" ]; then
-                  echo "CATALOG_BASE_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.previous_tag.outputs.tag }}" >> $GITHUB_ENV
-                  echo "Building catalog based on previous version: ${{ steps.previous_tag.outputs.tag }}"
+                if [ "${{ steps.registry_tag.outputs.found }}" == "true" ] && \
+                   [ -n "${{ steps.registry_tag.outputs.tag }}" ] && \
+                   [ "${{ steps.registry_tag.outputs.tag }}" != "${{ steps.current_tag.outputs.tag }}" ]; then
+                  echo "CATALOG_BASE_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.registry_tag.outputs.tag }}" >> $GITHUB_ENV
+                  echo "Building catalog based on registry version: ${{ steps.registry_tag.outputs.tag }}"
                 else
-                  echo "Building first catalog or no previous version found, starting from scratch"
+                  echo "Building first catalog or no previous version found in registry, starting from scratch"
                 fi
             - name: Debug catalog build configuration
               run: |
