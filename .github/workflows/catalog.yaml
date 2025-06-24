@@ -13,13 +13,21 @@ jobs:
               uses: actions/checkout@v4
               with:
                 fetch-depth: 0
-            - name: Get Tag
-              id: gettag
+            - name: Get Current Tag (Latest)
+              id: current_tag
+              run: echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+            - name: Get Previous Tag
+              id: previous_tag
               uses: WyriHaximus/github-action-get-previous-tag@v1
               with:
-                fallback: 0.0.1          
+                fallback: 0.0.1
             - name: set VERSION env
-              run: echo "VERSION=${{ steps.gettag.outputs.tag }}" >> $GITHUB_ENV
+              run: echo "VERSION=${{ steps.current_tag.outputs.tag }}" >> $GITHUB_ENV
+            - name: Debug version information
+              run: |
+                echo "Current tag: ${{ steps.current_tag.outputs.tag }}"
+                echo "Previous tag: ${{ steps.previous_tag.outputs.tag }}"
+                echo "VERSION: ${{ steps.current_tag.outputs.tag }}"
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
@@ -37,7 +45,23 @@ jobs:
                   images: |
                       ghcr.io/${{ github.repository }}
             - name: set CATALOG_IMG env
-              run: echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:v${{ steps.gettag.outputs.tag }}" >> $GITHUB_ENV
+              run: |
+                echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.current_tag.outputs.tag }}" >> $GITHUB_ENV
+            - name: set CATALOG_BASE_IMG env (if not first build)
+              run: |
+                if [ "${{ steps.previous_tag.outputs.tag }}" != "0.0.1" ] && \
+                   [ "${{ steps.previous_tag.outputs.tag }}" != "${{ steps.current_tag.outputs.tag }}" ]; then
+                  echo "CATALOG_BASE_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.previous_tag.outputs.tag }}" >> $GITHUB_ENV
+                  echo "Building catalog based on previous version: ${{ steps.previous_tag.outputs.tag }}"
+                else
+                  echo "Building first catalog or no previous version found, starting from scratch"
+                fi
+            - name: Debug catalog build configuration
+              run: |
+                echo "Building catalog with the following configuration:"
+                echo "CATALOG_IMG: $CATALOG_IMG"
+                echo "CATALOG_BASE_IMG: ${CATALOG_BASE_IMG:-not set (building from scratch)}"
+                echo "VERSION: $VERSION"
             - name: Make catalog build
               run: |
                 make catalog-build
