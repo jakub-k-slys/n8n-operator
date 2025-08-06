@@ -16,42 +16,24 @@ jobs:
             - name: Get Current Tag (Latest)
               id: current_tag
               run: echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
-            - name: Get Latest Catalog Version from Registry
-              id: registry_tag
+            - name: Get Latest Published Catalog Version
+              id: latest_catalog
               run: |
-                # Query GHCR for available catalog versions
                 TOKEN="${{ secrets.GITHUB_TOKEN }}"
                 REPO_OWNER="jakub-k-slys"
-                PACKAGE_NAME="operator-catalog"
-                REGISTRY_URL="ghcr.io/${REPO_OWNER}/${PACKAGE_NAME}"
                 
-                echo "Querying GitHub Container Registry for available catalog versions..."
-                echo "Registry URL: ${REGISTRY_URL}"
+                echo "Querying for latest published operator-catalog version..."
                 
-                # Try multiple approaches to get available versions
-                LATEST_VERSION=""
-                
-                # Approach 1: Use GitHub API
-                echo "Attempting to query GitHub Packages API..."
-                RESPONSE=$(curl -s -f -H "Authorization: Bearer ${TOKEN}" \
+                # Query for operator-catalog versions
+                CATALOG_RESPONSE=$(curl -s -H "Authorization: Bearer ${TOKEN}" \
                   -H "Accept: application/vnd.github.v3+json" \
-                  "https://api.github.com/users/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions" 2>/dev/null || echo "[]")
+                  "https://api.github.com/users/${REPO_OWNER}/packages/container/operator-catalog/versions" 2>/dev/null || echo "[]")
                 
-                if [ "$RESPONSE" != "[]" ] && [ -n "$RESPONSE" ]; then
-                  echo "API response received, parsing versions..."
-                  # Extract version tags, exclude current version, sort and get latest
-                  CURRENT_VERSION="${{ steps.current_tag.outputs.tag }}"
-                  LATEST_VERSION=$(echo "$RESPONSE" | jq -r '.[].metadata.container.tags[]?' 2>/dev/null | \
-                    grep -v "^${CURRENT_VERSION}$" | \
-                    grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | \
-                    sort -V | tail -1 || echo "")
+                if [ "$CATALOG_RESPONSE" != "[]" ] && [ -n "$CATALOG_RESPONSE" ]; then
+                  LATEST_CATALOG=$(echo "$CATALOG_RESPONSE" | jq -r '.[].metadata.container.tags[]' 2>/dev/null | \
+                    grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || echo "")
                 else
-                  echo "API query failed or returned empty response"
-                fi
-                
-                # Approach 2: If API fails, try using crane/skopeo if available
-                if [ -z "$LATEST_VERSION" ]; then
-                  echo "Attempting to use container registry tools..."
+                  echo "Failed to query catalog versions, trying with crane..."
                   # Install crane as backup
                   if ! command -v crane &> /dev/null; then
                     echo "Installing crane..."
@@ -59,38 +41,94 @@ jobs:
                     sudo mv /tmp/crane /usr/local/bin/
                   fi
                   
-                  # Try to list tags using crane
-                  if command -v crane &> /dev/null; then
-                    echo "Using crane to list registry tags..."
-                    CURRENT_VERSION="${{ steps.current_tag.outputs.tag }}"
-                    LATEST_VERSION=$(echo "${TOKEN}" | crane auth login ghcr.io --username ${REPO_OWNER} --password-stdin 2>/dev/null && \
-                      crane ls "${REGISTRY_URL}" 2>/dev/null | \
-                      grep -v "^${CURRENT_VERSION}$" | \
-                      grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | \
-                      sort -V | tail -1 || echo "")
-                  fi
+                  # Try crane approach
+                  LATEST_CATALOG=$(echo "${TOKEN}" | crane auth login ghcr.io --username ${REPO_OWNER} --password-stdin 2>/dev/null && \
+                    crane ls "ghcr.io/${REPO_OWNER}/operator-catalog" 2>/dev/null | \
+                    grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || echo "")
                 fi
                 
-                echo "Current version: ${{ steps.current_tag.outputs.tag }}"
-                echo "Latest registry version: ${LATEST_VERSION}"
+                echo "latest_catalog=${LATEST_CATALOG}" >> $GITHUB_OUTPUT
+                echo "Latest published catalog: ${LATEST_CATALOG:-none found}"
+            
+            - name: Get Latest Published Bundle Version
+              id: latest_bundle
+              run: |
+                TOKEN="${{ secrets.GITHUB_TOKEN }}"
+                REPO_OWNER="jakub-k-slys"
                 
-                if [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "null" ] && [ "$LATEST_VERSION" != "" ]; then
-                  echo "tag=${LATEST_VERSION}" >> $GITHUB_OUTPUT
-                  echo "found=true" >> $GITHUB_OUTPUT
-                  echo "✅ Found latest catalog version in registry: ${LATEST_VERSION}"
+                echo "Querying for latest published n8n-operator-bundle version..."
+                
+                # Query for n8n-operator-bundle versions
+                BUNDLE_RESPONSE=$(curl -s -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Accept: application/vnd.github.v3+json" \
+                  "https://api.github.com/users/${REPO_OWNER}/packages/container/n8n-operator-bundle/versions" 2>/dev/null || echo "[]")
+                
+                if [ "$BUNDLE_RESPONSE" != "[]" ] && [ -n "$BUNDLE_RESPONSE" ]; then
+                  LATEST_BUNDLE=$(echo "$BUNDLE_RESPONSE" | jq -r '.[].metadata.container.tags[]' 2>/dev/null | \
+                    grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || echo "")
                 else
-                  echo "No previous catalog versions found in registry"
-                  echo "found=false" >> $GITHUB_OUTPUT
-                  echo "ℹ️ Will build catalog from scratch (no base image)"
+                  echo "Failed to query bundle versions, trying with crane..."
+                  # Try crane approach
+                  LATEST_BUNDLE=$(echo "${TOKEN}" | crane auth login ghcr.io --username ${REPO_OWNER} --password-stdin 2>/dev/null && \
+                    crane ls "ghcr.io/${REPO_OWNER}/n8n-operator-bundle" 2>/dev/null | \
+                    grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || echo "")
                 fi
+                
+                echo "latest_bundle=${LATEST_BUNDLE}" >> $GITHUB_OUTPUT
+                echo "Latest published bundle: ${LATEST_BUNDLE:-none found}"
             - name: set VERSION env
               run: echo "VERSION=${{ steps.current_tag.outputs.tag }}" >> $GITHUB_ENV
+            - name: Determine Catalog Build Strategy
+              id: build_strategy
+              run: |
+                LATEST_CATALOG="${{ steps.latest_catalog.outputs.latest_catalog }}"
+                LATEST_BUNDLE="${{ steps.latest_bundle.outputs.latest_bundle }}"
+                CURRENT_TAG="${{ steps.current_tag.outputs.tag }}"
+                
+                echo "=== Catalog Build Strategy ==="
+                echo "Current git tag: ${CURRENT_TAG}"
+                echo "Latest published catalog: ${LATEST_CATALOG:-none}"
+                echo "Latest published bundle: ${LATEST_BUNDLE:-none}"
+                
+                # Extract version from bundle (remove 'v' prefix for comparison)
+                if [ -n "$LATEST_BUNDLE" ]; then
+                  BUNDLE_VERSION=$(echo "$LATEST_BUNDLE" | sed 's/^v//')
+                  echo "Bundle version (no prefix): ${BUNDLE_VERSION}"
+                else
+                  BUNDLE_VERSION=""
+                fi
+                
+                # Determine build strategy
+                if [ -n "$LATEST_CATALOG" ]; then
+                  echo "base_catalog=${LATEST_CATALOG}" >> $GITHUB_OUTPUT
+                  echo "Strategy: Building from existing catalog ${LATEST_CATALOG}"
+                  HAS_BASE=true
+                else
+                  echo "Strategy: Building catalog from scratch (no existing catalog found)"
+                  HAS_BASE=false
+                fi
+                
+                if [ -n "$LATEST_BUNDLE" ]; then
+                  echo "bundle_to_include=${LATEST_BUNDLE}" >> $GITHUB_OUTPUT
+                  echo "Will include bundle: ${LATEST_BUNDLE}"
+                else
+                  echo "⚠️  No bundle found to include!"
+                fi
+                
+                echo "target_catalog_version=${CURRENT_TAG}" >> $GITHUB_OUTPUT
+                echo "has_base=${HAS_BASE}" >> $GITHUB_OUTPUT
+                echo "Target catalog version: ${CURRENT_TAG}"
+            
             - name: Debug version information
               run: |
+                echo "=== Build Configuration ==="
                 echo "Current tag: ${{ steps.current_tag.outputs.tag }}"
-                echo "Latest registry catalog version: ${{ steps.registry_tag.outputs.tag }}"
-                echo "Registry version found: ${{ steps.registry_tag.outputs.found }}"
-                echo "VERSION: ${{ steps.current_tag.outputs.tag }}"
+                echo "Latest catalog: ${{ steps.latest_catalog.outputs.latest_catalog }}"
+                echo "Latest bundle: ${{ steps.latest_bundle.outputs.latest_bundle }}"
+                echo "Base catalog: ${{ steps.build_strategy.outputs.base_catalog }}"
+                echo "Bundle to include: ${{ steps.build_strategy.outputs.bundle_to_include }}"
+                echo "Target version: ${{ steps.build_strategy.outputs.target_catalog_version }}"
+                echo "Has base: ${{ steps.build_strategy.outputs.has_base }}"
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
@@ -110,15 +148,14 @@ jobs:
             - name: set CATALOG_IMG env
               run: |
                 echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.current_tag.outputs.tag }}" >> $GITHUB_ENV
-            - name: set CATALOG_BASE_IMG env (if previous version exists in registry)
+            - name: set CATALOG_BASE_IMG env (if previous version exists)
               run: |
-                if [ "${{ steps.registry_tag.outputs.found }}" == "true" ] && \
-                   [ -n "${{ steps.registry_tag.outputs.tag }}" ] && \
-                   [ "${{ steps.registry_tag.outputs.tag }}" != "${{ steps.current_tag.outputs.tag }}" ]; then
-                  echo "CATALOG_BASE_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.registry_tag.outputs.tag }}" >> $GITHUB_ENV
-                  echo "Building catalog based on registry version: ${{ steps.registry_tag.outputs.tag }}"
+                if [ "${{ steps.build_strategy.outputs.has_base }}" == "true" ] && \
+                   [ -n "${{ steps.build_strategy.outputs.base_catalog }}" ]; then
+                  echo "CATALOG_BASE_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.build_strategy.outputs.base_catalog }}" >> $GITHUB_ENV
+                  echo "✅ Building catalog based on existing version: ${{ steps.build_strategy.outputs.base_catalog }}"
                 else
-                  echo "Building first catalog or no previous version found in registry, starting from scratch"
+                  echo "ℹ️  Building first catalog or no previous version found, starting from scratch"
                 fi
             - name: Debug catalog build configuration
               run: |
@@ -126,8 +163,22 @@ jobs:
                 echo "CATALOG_IMG: $CATALOG_IMG"
                 echo "CATALOG_BASE_IMG: ${CATALOG_BASE_IMG:-not set (building from scratch)}"
                 echo "VERSION: $VERSION"
+            - name: Set BUNDLE_IMGS for catalog build
+              run: |
+                if [ -n "${{ steps.build_strategy.outputs.bundle_to_include }}" ]; then
+                  echo "BUNDLE_IMGS=ghcr.io/jakub-k-slys/n8n-operator-bundle:${{ steps.build_strategy.outputs.bundle_to_include }}" >> $GITHUB_ENV
+                  echo "Using bundle: ghcr.io/jakub-k-slys/n8n-operator-bundle:${{ steps.build_strategy.outputs.bundle_to_include }}"
+                else
+                  echo "❌ No bundle specified - catalog build will fail!"
+                  exit 1
+                fi
+            
             - name: Make catalog build
               run: |
+                echo "Building catalog with:"
+                echo "  CATALOG_IMG: $CATALOG_IMG"
+                echo "  CATALOG_BASE_IMG: ${CATALOG_BASE_IMG:-not set}"
+                echo "  BUNDLE_IMGS: $BUNDLE_IMGS"
                 make catalog-build
             - name: Push catalog
               run: |
