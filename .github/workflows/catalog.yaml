@@ -98,14 +98,30 @@ jobs:
                   BUNDLE_VERSION=""
                 fi
                 
-                # Determine build strategy
+                # Determine target catalog version by incrementing minor version
                 if [ -n "$LATEST_CATALOG" ]; then
                   echo "base_catalog=${LATEST_CATALOG}" >> $GITHUB_OUTPUT
                   echo "Strategy: Building from existing catalog ${LATEST_CATALOG}"
                   HAS_BASE=true
+                  
+                  # Parse the latest catalog version and increment minor version
+                  if [[ "$LATEST_CATALOG" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+                    MAJOR=${BASH_REMATCH[1]}
+                    MINOR=${BASH_REMATCH[2]}
+                    PATCH=${BASH_REMATCH[3]}
+                    NEW_MINOR=$((MINOR + 1))
+                    TARGET_VERSION="${MAJOR}.${NEW_MINOR}.0"
+                    echo "Incrementing catalog version: ${LATEST_CATALOG} -> ${TARGET_VERSION}"
+                  else
+                    # Fallback to git tag if parsing fails
+                    TARGET_VERSION="${CURRENT_TAG}"
+                    echo "⚠️  Could not parse catalog version ${LATEST_CATALOG}, using git tag: ${TARGET_VERSION}"
+                  fi
                 else
                   echo "Strategy: Building catalog from scratch (no existing catalog found)"
                   HAS_BASE=false
+                  # Use git tag for first catalog version
+                  TARGET_VERSION="${CURRENT_TAG}"
                 fi
                 
                 if [ -n "$LATEST_BUNDLE" ]; then
@@ -115,9 +131,9 @@ jobs:
                   echo "⚠️  No bundle found to include!"
                 fi
                 
-                echo "target_catalog_version=${CURRENT_TAG}" >> $GITHUB_OUTPUT
+                echo "target_catalog_version=${TARGET_VERSION}" >> $GITHUB_OUTPUT
                 echo "has_base=${HAS_BASE}" >> $GITHUB_OUTPUT
-                echo "Target catalog version: ${CURRENT_TAG}"
+                echo "Target catalog version: ${TARGET_VERSION}"
             
             - name: Debug version information
               run: |
@@ -147,7 +163,7 @@ jobs:
                       ghcr.io/${{ github.repository }}
             - name: set CATALOG_IMG env
               run: |
-                echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.current_tag.outputs.tag }}" >> $GITHUB_ENV
+                echo "CATALOG_IMG=ghcr.io/jakub-k-slys/operator-catalog:${{ steps.build_strategy.outputs.target_catalog_version }}" >> $GITHUB_ENV
             - name: set CATALOG_BASE_IMG env (if previous version exists)
               run: |
                 if [ "${{ steps.build_strategy.outputs.has_base }}" == "true" ] && \
