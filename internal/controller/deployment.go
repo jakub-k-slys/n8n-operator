@@ -11,7 +11,14 @@ import (
 func (r *N8nReconciler) deploymentForN8n(n8n *n8nv1alpha1.N8n) (*appsv1.Deployment, error) {
 	ls := labelsForN8n()
 	replicas := int32(1)
-	image := n8nDockerImage
+	
+	// Use version from spec, fallback to build-time version
+	version := n8n.Spec.Version
+	if version == "" {
+		version = n8nVersion
+	}
+	image := "ghcr.io/n8n-io/n8n:" + version
+	
 	var volumes []corev1.Volume
 	var volumeMounts []corev1.VolumeMount
 
@@ -41,8 +48,8 @@ func (r *N8nReconciler) deploymentForN8n(n8n *n8nv1alpha1.N8n) (*appsv1.Deployme
 			Labels: map[string]string{
 				"app.kubernetes.io/name":    "n8n",
 				"app":                       "n8n",
-				"app.kubernetes.io/version": n8nVersion,
-				"version":                   n8nVersion,
+				"app.kubernetes.io/version": version,
+				"version":                   version,
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
