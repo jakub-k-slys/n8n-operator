@@ -168,6 +168,11 @@ spec:
                 required:
                 - enable
                 type: object
+              version:
+                default: 2.2.2
+                description: Version specifies the n8n container image version to
+                  use
+                type: string
             required:
             - database
             type: object

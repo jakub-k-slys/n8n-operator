@@ -36,7 +36,7 @@ func getContainerSecurityContext() *corev1.SecurityContext {
 }
 
 func getN8nEnvVars(n8n *n8nv1alpha1.N8n) []corev1.EnvVar {
-	return []corev1.EnvVar{
+	envVars := []corev1.EnvVar{
 		{
 			Name:  "DB_TYPE",
 			Value: "postgresdb",
@@ -70,24 +70,38 @@ func getN8nEnvVars(n8n *n8nv1alpha1.N8n) []corev1.EnvVar {
 			Value: "/home/node",
 		},
 		{
-			Name:  "N8N_EDITOR_BASE_URL",
-			Value: fmt.Sprintf("https://%s", n8n.Spec.Hostname.Url),
-		},
-		{
 			Name:  "N8N_TEMPLATES_ENABLED",
 			Value: "true",
 		},
-		{
-			Name:  "N8N_HOST",
-			Value: fmt.Sprintf("https://%s", n8n.Spec.Hostname.Url),
-		},
-		{
-			Name:  "WEBHOOK_URL",
-			Value: n8n.Spec.Hostname.Url,
-		},
-		{
-			Name:  "N8N_METRICS",
-			Value: fmt.Sprintf("%t", n8n.Spec.Metrics != nil && n8n.Spec.Metrics.Enable),
-		},
 	}
+
+	// Add hostname-related environment variables if hostname is configured
+	if n8n.Spec.Hostname != nil && n8n.Spec.Hostname.Enable && n8n.Spec.Hostname.Url != "" {
+		envVars = append(envVars, []corev1.EnvVar{
+			{
+				Name:  "N8N_EDITOR_BASE_URL",
+				Value: fmt.Sprintf("https://%s", n8n.Spec.Hostname.Url),
+			},
+			{
+				Name:  "N8N_HOST",
+				Value: fmt.Sprintf("https://%s", n8n.Spec.Hostname.Url),
+			},
+			{
+				Name:  "WEBHOOK_URL",
+				Value: n8n.Spec.Hostname.Url,
+			},
+		}...)
+	}
+
+	// Add metrics environment variable if metrics is configured
+	metricsEnabled := false
+	if n8n.Spec.Metrics != nil && n8n.Spec.Metrics.Enable {
+		metricsEnabled = true
+	}
+	envVars = append(envVars, corev1.EnvVar{
+		Name:  "N8N_METRICS",
+		Value: fmt.Sprintf("%t", metricsEnabled),
+	})
+
+	return envVars
 }

@@ -139,6 +139,11 @@ type N8nSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	// Version specifies the n8n container image version to use
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// +kubebuilder:default="2.2.2"
+	Version string `json:"version,omitempty"`
+
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Database Database `json:"database"`
 
