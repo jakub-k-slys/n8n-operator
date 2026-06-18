@@ -84,3 +84,4 @@ Undeploy the controller:
 
 ```sh
 make undeploy
+```
