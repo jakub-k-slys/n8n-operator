@@ -1,3 +1,10 @@
+> [!WARNING]
+> This operator is no longer actively developed. The current generation
+> of this project is [N8n Rustful Operator](https://github.com/jakub-k-slys/n8n-rustful-operator)
+> — Kubernetes operator in Rust that runs n8n from custom resources. Declare an n8n instance — single process
+> or queue-mode cluster — and the operator reconciles for you.
+> Just start there.
+
 <div align="center">
   <img src="https://raw.githubusercontent.com/n8n-io/n8n/master/assets/n8n-logo.png" alt="n8n Logo" height="100">
   <br><br>
